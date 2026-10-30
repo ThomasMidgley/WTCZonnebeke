@@ -1,0 +1,34 @@
+# Portainer-stack voor de website van WTC Zonnebeke.
+# In Portainer: Stacks > Add stack > Repository (of plak deze inhoud),
+# en vul de variabelen in onder "Environment variables" (zie .env.example).
+services:
+  web:
+    image: ghcr.io/thomasmidgley/wtczonnebeke:${IMAGE_TAG:-main}
+    container_name: wtc-website
+    restart: unless-stopped
+    ports:
+      # Enkel bereikbaar op je lokaal netwerk; het internet komt binnen via de Cloudflare-tunnel.
+      - "${HOST_PORT:-8000}:8000"
+    volumes:
+      - wtc-data:/data
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-wtczonnebeke.be,www.wtczonnebeke.be}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://wtczonnebeke.be,https://www.wtczonnebeke.be}
+      BASE_URL: ${BASE_URL:-https://www.wtczonnebeke.be}
+      SITE_NOINDEX: ${SITE_NOINDEX:-1}
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID:-}
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:-}
+      AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:-}
+      BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS:-}
+      SEED_STOCK_EMAILS: ${SEED_STOCK_EMAILS:-}
+      CYQL_CLUB_ID: ${CYQL_CLUB_ID:-}
+      ALLOW_PASSWORD_LOGIN: ${ALLOW_PASSWORD_LOGIN:-0}
+      CYQL_API_KEY: ${CYQL_API_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      BACKUP_TIME: ${BACKUP_TIME:-02:30}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+
+volumes:
+  wtc-data:

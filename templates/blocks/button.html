@@ -1,0 +1,1 @@
+{% load wagtailcore_tags %}<p><a class="button" href="{% if value.page %}{% pageurl value.page %}{% else %}{{ value.url }}{% endif %}">{{ value.label }}</a></p>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wtc %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap content split">
+  <div>{% include_block page.body %}</div>
+  {% with link=settings.core.CyqlApp.invite_link %}
+  <aside class="callout">
+    <h2>Word lid van onze club in Cyql</h2>
+    <p>Scan de QR-code met je gsm, of tik op de knop als je deze pagina al op je gsm bekijkt.</p>
+    {% qr_svg link "QR-code met de uitnodigingslink voor de Cyql-app" %}
+    <p><a class="button" href="{{ link }}" rel="noopener">Open de uitnodiging</a></p>
+  </aside>
+  {% endwith %}
+</div>
+{% endblock %}

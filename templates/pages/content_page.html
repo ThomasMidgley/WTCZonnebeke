@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap narrow content">{% include_block page.body %}</div>
+{% endblock %}

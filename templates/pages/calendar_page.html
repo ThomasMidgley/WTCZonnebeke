@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap narrow content">
+  {% include_block page.body %}
+  <div class="callout"><p>Deze gegevens worden binnenkort automatisch uit de Cyql-app geladen.</p></div>
+</div>
+{% endblock %}

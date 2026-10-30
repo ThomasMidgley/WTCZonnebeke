@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap narrow content rules">
+  {% with doc=settings.core.Clubreglement.document %}
+  {% if doc or page.version %}
+    <p class="download">
+      {% if page.version %}<span>Versie {{ page.version }}</span>{% endif %}
+      {% if doc %}<a href="{{ doc.url }}">Download het clubreglement ({{ doc.file_extension|upper }})</a>{% endif %}
+    </p>
+  {% endif %}
+  {% endwith %}
+  {{ page.body|richtext }}
+</div>
+{% endblock %}

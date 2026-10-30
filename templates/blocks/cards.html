@@ -1,0 +1,5 @@
+<ul class="cards">
+  {% for card in value.cards %}
+    <li class="card"><h3>{{ card.title }}</h3><p>{{ card.text|linebreaksbr }}</p></li>
+  {% endfor %}
+</ul>

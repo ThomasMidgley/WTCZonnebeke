@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap content">
+  <ul class="board">
+    {% for member in page.members.all %}
+      <li>
+        <h2>{{ member.name }}</h2>
+        <p class="role">{{ member.role }}</p>
+        {% if member.task_list %}<ul>{% for task in member.task_list %}<li>{{ task }}</li>{% endfor %}</ul>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% include_block page.body %}
+</div>
+{% endblock %}

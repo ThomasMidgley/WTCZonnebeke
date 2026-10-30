@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags wtc %}
+{% block content %}
+<div class="page-head">
+  <div class="wrap">
+    <h1>{{ page.title }}</h1>
+    {% if page.summary %}<p>{{ page.summary }}</p>{% endif %}
+  </div>
+</div>
+<div class="wrap content split">
+  <div>
+    {% if page.intro %}<p><strong>{{ page.intro }}</strong></p>{% endif %}
+    {% include_block page.body %}
+    {% with vid=page.video_url|youtube_id %}{% if vid %}
+      <div class="video">
+        <button type="button" data-youtube="{{ vid }}" data-title="{{ page.title }}">
+          <span class="play" aria-hidden="true"></span>
+          <span>Bekijk de film van de {{ page.title }}</span>
+          <small>De film wordt geladen van YouTube als je klikt.</small>
+        </button>
+      </div>
+    {% endif %}{% endwith %}
+  </div>
+  <aside>
+    {% if page.image %}<figure>{% image page.image width-800 format-webp alt="" loading="lazy" %}</figure>{% endif %}
+    <div class="callout">
+      <h2>Praktisch</h2>
+      <dl class="facts">
+        {% if page.event_date %}<dt>Datum</dt><dd>{{ page.event_date|date:"l j F Y" }}</dd>{% endif %}
+        {% if page.start_place %}<dt>Start</dt><dd>{{ page.start_place }}</dd>{% endif %}
+        {% if page.distances %}<dt>Afstanden</dt><dd>{{ page.distances }}</dd>{% endif %}
+        <dt>Organisatie</dt><dd>WTC Zonnebeke vzw</dd>
+      </dl>
+      {% if page.registration_url %}<p><a class="button" href="{{ page.registration_url }}">Schrijf je in</a></p>{% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
