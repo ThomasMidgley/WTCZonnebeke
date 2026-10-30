@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+{% block title %}Wielertoeristenclub in Zonnebeke{% endblock %}
+{% block content %}
+<section class="hero">
+  {% if page.hero_image %}{% image page.hero_image fill-1600x700 format-webp class="hero-image" alt="" %}{% endif %}
+  <div class="wrap">
+    <h1>{{ page.hero_title }}</h1>
+    {% if page.hero_text %}<p>{{ page.hero_text }}</p>{% endif %}
+    {% if page.hero_button_page %}
+      <div class="actions">
+        <a class="button" href="{% pageurl page.hero_button_page %}">{{ page.hero_button_label|default:page.hero_button_page.title }}</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% include "includes/sponsors.html" %}
+<div class="wrap narrow content">
+  {% include_block page.body %}
+  {% if events %}
+    <h2>Onze evenementen</h2>
+    <ul class="cards">
+      {% for event in events %}
+        <li class="card">
+          <h3><a href="{% pageurl event %}">{{ event.title }}</a></h3>
+          {% if event.event_date %}<p class="meta">{{ event.event_date|date:"l j F Y" }}</p>{% endif %}
+          {% if event.summary %}<p>{{ event.summary }}</p>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}

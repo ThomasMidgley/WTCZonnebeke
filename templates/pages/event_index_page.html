@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap content">
+  <ul class="cards">
+    {% for event in events %}
+      <li class="card">
+        <h2><a href="{% pageurl event %}">{{ event.title }}</a></h2>
+        {% if event.event_date %}<p class="meta">{{ event.event_date|date:"l j F Y" }}</p>{% endif %}
+        {% if event.summary %}<p>{{ event.summary }}</p>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% include_block page.body %}
+</div>
+{% endblock %}

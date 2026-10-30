@@ -1,0 +1,7 @@
+Django~=5.2.0
+wagtail~=7.4.0
+gunicorn~=26.2
+whitenoise~=6.12
+msal~=1.39
+requests~=2.32
+qrcode~=8.2

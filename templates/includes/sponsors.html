@@ -1,0 +1,17 @@
+{% load wagtailimages_tags %}
+{% if main_sponsors %}
+<section class="sponsors" aria-labelledby="sponsors-titel">
+  <div class="wrap">
+    <h2 id="sponsors-titel">Met dank aan onze hoofdsponsors</h2>
+    <ul class="sponsor-grid">
+      {% for sponsor in main_sponsors %}
+        <li>
+          {% if sponsor.url %}<a href="{{ sponsor.url }}" rel="noopener">{% else %}<span>{% endif %}
+          {% if sponsor.logo %}{% image sponsor.logo max-320x200 format-webp alt=sponsor.name loading="lazy" %}{% else %}{{ sponsor.name }}{% endif %}
+          {% if sponsor.url %}</a>{% else %}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}

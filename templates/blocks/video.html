@@ -1,0 +1,9 @@
+{% load wtc %}{% with vid=value.url|youtube_id %}{% if vid %}
+<div class="video">
+  <button type="button" data-youtube="{{ vid }}" data-title="{{ value.title|default:'Video' }}">
+    <span class="play" aria-hidden="true"></span>
+    <span>{{ value.title|default:"Bekijk de film" }}</span>
+    <small>De film wordt geladen van YouTube als je klikt.</small>
+  </button>
+</div>
+{% endif %}{% endwith %}

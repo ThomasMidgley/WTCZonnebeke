@@ -1,0 +1,44 @@
+{% load static wagtailcore_tags wagtailuserbar wtc %}<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% if page.seo_title %}{{ page.seo_title }}{% elif page %}{{ page.title }}{% endif %}{% endblock %} | WTC Zonnebeke</title>
+  {% if page.search_description %}<meta name="description" content="{{ page.search_description }}">{% endif %}
+  {% if site_noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
+  <meta name="theme-color" content="{{ settings.core.Huisstijl.primary_color }}">
+  <link rel="icon" href="{% static 'img/icon.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <style>:root{ {% for name, value in settings.core.Huisstijl.css_variables.items %}{{ name }}:{{ value }};{% endfor %} }</style>
+  <script src="{% static 'js/site.js' %}" defer></script>
+</head>
+<body>
+  <a class="skip" href="#inhoud">Naar de inhoud</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/" aria-label="WTC Zonnebeke, naar de home"><img src="{% static 'img/logo.svg' %}" alt="wtc-zonnebeke.be, cycling - mtb team" width="208" height="41"></a>
+      {% main_menu as menu %}
+      <nav class="nav-desktop" aria-label="Hoofdmenu">
+        <ul>
+          {% for item in menu %}<li><a href="{% pageurl item %}"{% if item|is_current:page %} aria-current="page"{% endif %}>{{ item.title }}</a></li>{% endfor %}
+        </ul>
+      </nav>
+      <details class="nav-mobile">
+        <summary>Menu</summary>
+        <nav aria-label="Hoofdmenu (mobiel)">
+          <ul>
+            {% for item in menu %}<li><a href="{% pageurl item %}"{% if item|is_current:page %} aria-current="page"{% endif %}>{{ item.title }}</a></li>{% endfor %}
+          </ul>
+        </nav>
+      </details>
+    </div>
+  </header>
+  <main id="inhoud">
+    {% block content %}{% endblock %}
+  </main>
+  {% include "includes/footer.html" %}
+  {% wagtailuserbar %}
+</body>
+</html>

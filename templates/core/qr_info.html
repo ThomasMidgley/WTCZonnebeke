@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{ info.heading }}</title>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; font-size: 1.15rem; line-height: 1.55; color: #1f1f1f; background: #fff; }
+    main { max-width: 32rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    h1 { font-size: 1.5rem; margin: 0 0 1rem; padding-bottom: 0.5rem; border-bottom: 4px solid #ff5200; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; margin: 1.5rem 0 0; }
+    dt { font-weight: 700; }
+    dd { margin: 0; }
+    a { color: #b33a00; font-weight: 700; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>{{ info.heading }}</h1>
+  <p>{{ info.greeting }}<br>{{ info.ownership }}</p>
+  <p>{{ info.report_text }} <a href="tel:{{ info.report_phone|cut:' ' }}">{{ info.report_phone }}</a></p>
+  <dl>
+    <dt>Evenement</dt><dd>{{ info.event }}</dd>
+    {% if info.event_date %}<dt>Datum</dt><dd>{{ info.event_date|date:"l j F Y"|capfirst }}</dd>{% endif %}
+    <dt>Verantwoordelijke</dt><dd>{{ info.responsible }}</dd>
+    <dt>GSM</dt><dd><a href="tel:{{ info.responsible_phone|cut:' ' }}">{{ info.responsible_phone }}</a></dd>
+    <dt>Organisator</dt><dd>{{ info.organiser }}</dd>
+  </dl>
+</main>
+</body>
+</html>

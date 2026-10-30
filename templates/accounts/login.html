@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Aanmelden{% endblock %}
+{% block content %}
+<div class="wrap narrow content">
+  <h1>Beheer van de website</h1>
+  {% if sso_ready %}
+    <p>Meld je aan met je Microsoft 365-account van de club.</p>
+    <p><a class="button" href="?start=1&amp;next={{ next|urlencode }}">Aanmelden met Microsoft 365</a></p>
+  {% else %}
+    <div class="callout"><p>Aanmelden via Microsoft 365 is nog niet ingesteld. Vul tenant-ID, client-ID en het client secret in (zie de handleiding in de repository).</p></div>
+  {% endif %}
+  {% if password_login %}<p><a href="{% url 'accounts:password_login' %}?next={{ next|urlencode }}">Noodtoegang met wachtwoord</a></p>{% endif %}
+</div>
+{% endblock %}

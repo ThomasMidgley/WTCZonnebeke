@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap content split">
+  <form class="form" action="{% pageurl page %}" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <p class="hp" aria-hidden="true"><label for="website">Laat dit veld leeg</label><input id="website" name="website" tabindex="-1" autocomplete="off"></p>
+    <button class="button" type="submit">Verstuur</button>
+  </form>
+  {% with club=settings.core.Clubgegevens %}
+  <aside class="callout">
+    <h2>{{ club.vzw_name }}</h2>
+    <dl class="facts">
+      {% if club.address %}<dt>Zetel</dt><dd>{{ club.address }}</dd>{% endif %}
+      {% if club.meeting_place %}<dt>Vertrek</dt><dd>{{ club.meeting_place }}</dd>{% endif %}
+      {% if club.email %}<dt>E-mail</dt><dd><a href="mailto:{{ club.email }}">{{ club.email }}</a></dd>{% endif %}
+      {% if club.phone %}<dt>Telefoon</dt><dd>{{ club.phone }}</dd>{% endif %}
+      {% if club.iban %}<dt>Rekening</dt><dd>{{ club.iban }}</dd>{% endif %}
+      {% if club.enterprise_number %}<dt>Ond.nr.</dt><dd>{{ club.enterprise_number }}</dd>{% endif %}
+      {% if club.rpr %}<dt>RPR</dt><dd>{{ club.rpr }}</dd>{% endif %}
+    </dl>
+  </aside>
+  {% endwith %}
+</div>
+{% endblock %}

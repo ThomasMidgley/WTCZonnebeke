@@ -1,0 +1,31 @@
+{% with club=settings.core.Clubgegevens %}
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <h2>{{ club.vzw_name }}</h2>
+      <address>
+        {% if club.address %}{{ club.address }}<br>{% endif %}
+        {% if club.email %}<a href="mailto:{{ club.email }}">{{ club.email }}</a><br>{% endif %}
+        {% if club.phone %}<a href="tel:{{ club.phone|cut:' '|cut:'/'|cut:'.' }}">{{ club.phone }}</a>{% endif %}
+      </address>
+    </div>
+    <div>
+      <h2>Vzw</h2>
+      <ul>
+        {% if club.enterprise_number %}<li>Ondernemingsnr. {{ club.enterprise_number }}{% if club.rpr %}, RPR {{ club.rpr }}{% endif %}</li>{% endif %}
+        {% if club.iban %}<li>Rekening {{ club.iban }}</li>{% endif %}
+        {% if settings.core.Statuten.url %}<li><a href="{{ settings.core.Statuten.url }}">Statuten</a></li>{% endif %}
+        {% if club.privacy_url %}<li><a href="{{ club.privacy_url }}">Privacyverklaring</a></li>{% endif %}
+      </ul>
+    </div>
+    <div>
+      <h2>Volg ons</h2>
+      <ul>
+        {% if club.facebook_url %}<li><a href="{{ club.facebook_url }}" rel="noopener">Facebook</a></li>{% endif %}
+        {% if club.strava_url %}<li><a href="{{ club.strava_url }}" rel="noopener">Strava</a></li>{% endif %}
+      </ul>
+    </div>
+    <p class="legal">Webdesign door <a href="https://www.postmill.be" rel="noopener">Post Mill</a> · © WTC Zonnebeke vzw</p>
+  </div>
+</footer>
+{% endwith %}
