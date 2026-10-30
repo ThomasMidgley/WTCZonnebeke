@@ -8,7 +8,8 @@ services:
     restart: unless-stopped
     ports:
       # Enkel bereikbaar op je lokaal netwerk; het internet komt binnen via de Cloudflare-tunnel.
-      - "${HOST_PORT:-8000}:8000"
+      # Poort 8001 op de Pi, omdat Portainer zelf al poort 8000 gebruikt.
+      - "${HOST_PORT:-8001}:8000"
     volumes:
       - wtc-data:/data
     environment:

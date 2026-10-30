@@ -54,11 +54,11 @@ In *Cloudflare Zero Trust* > *Networks* > *Tunnels* > je bestaande tunnel > *Pub
 
 | Subdomain | Domain | Service |
 | --- | --- | --- |
-| `www` | `wtczonnebeke.be` | `http://<ip-van-de-pi>:8000` |
-| (leeg) | `wtczonnebeke.be` | `http://<ip-van-de-pi>:8000` |
+| `www` | `wtczonnebeke.be` | `http://<ip-van-de-pi>:8001` |
+| (leeg) | `wtczonnebeke.be` | `http://<ip-van-de-pi>:8001` |
 
-Draait cloudflared zelf in Docker op dezelfde Pi, dan kan `http://<ip-van-de-pi>:8000` gewoon blijven.
-Zet poort 8000 **niet** open in je router.
+Draait cloudflared zelf in Docker op dezelfde Pi, dan kan `http://<ip-van-de-pi>:8001` gewoon blijven.
+Zet poort 8001 **niet** open in je router.
 
 Optioneel en aangeraden: *Access* > *Applications* > *Self-hosted* voor `www.wtczonnebeke.be/admin`,
 met Microsoft Entra ID als login. Dan ziet niemand buiten de club zelfs het aanmeldscherm.
