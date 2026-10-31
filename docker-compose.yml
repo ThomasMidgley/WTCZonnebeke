@@ -6,10 +6,10 @@ services:
     image: ghcr.io/thomasmidgley/wtczonnebeke:${IMAGE_TAG:-main}
     container_name: wtc-website
     restart: unless-stopped
-    ports:
-      # Enkel bereikbaar op je lokaal netwerk; het internet komt binnen via de Cloudflare-tunnel.
-      # Poort 8001 op de Pi, omdat Portainer zelf al poort 8000 gebruikt.
-      - "${HOST_PORT:-8001}:8000"
+    # Geen poort op de Pi: cloudflared bereikt de site via het gedeelde Docker-netwerk
+    # op http://wtc-website:8000. Zo staat de site nergens anders open.
+    networks:
+      - tunnel
     volumes:
       - wtc-data:/data
     environment:
@@ -33,3 +33,9 @@ services:
 
 volumes:
   wtc-data:
+
+networks:
+  tunnel:
+    # Het bestaande netwerk waarin je cloudflared-container zit.
+    external: true
+    name: ${TUNNEL_NETWORK:-tunnel}
