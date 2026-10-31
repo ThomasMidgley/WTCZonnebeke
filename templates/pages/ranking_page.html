@@ -3,7 +3,36 @@
 {% block content %}
 {% include "includes/page_head.html" %}
 <div class="wrap narrow content">
+  {% for challenge in challenges %}
+    <section class="ranking">
+      <h2>{{ challenge.title }}</h2>
+      {% if challenge.start_date or challenge.end_date %}
+        <p class="meta">{{ challenge.start_date|date:"j F Y" }}{% if challenge.end_date %} tot {{ challenge.end_date|date:"j F Y" }}{% endif %}</p>
+      {% endif %}
+      {% with scores=challenge.scores.all %}
+        {% if scores %}
+          <table>
+            <thead><tr><th scope="col">#</th><th scope="col">Naam</th><th scope="col" class="num">{{ challenge.unit|default:"Score"|capfirst }}</th><th scope="col" class="num">Ritten</th></tr></thead>
+            <tbody>
+              {% for score in scores %}
+                <tr>
+                  <td>{{ score.rank }}</td>
+                  <td>{% if page.show_full_names %}{{ score.member_name }}{% else %}{{ score.short_name }}{% endif %}</td>
+                  <td class="num">{{ score.score|floatformat:"-1" }}</td>
+                  <td class="num">{{ score.ride_count|default_if_none:"" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p>Nog geen scores.</p>
+        {% endif %}
+      {% endwith %}
+      {% if challenge.scores_updated_at %}<p class="updated">Bijgewerkt op {{ challenge.scores_updated_at|date:"j F Y, H.i" }} uur.</p>{% endif %}
+    </section>
+  {% empty %}
+    <div class="callout"><p>Het klassement is nog niet beschikbaar.</p></div>
+  {% endfor %}
   {% include_block page.body %}
-  <div class="callout"><p>Deze gegevens worden binnenkort automatisch uit de Cyql-app geladen.</p></div>
 </div>
 {% endblock %}

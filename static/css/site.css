@@ -243,3 +243,25 @@ figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; }
 .site-footer ul { list-style: none; padding: 0; margin: 0; }
 .site-footer address { font-style: normal; }
 .site-footer .legal { grid-column: 1 / -1; border-top: 1px solid rgb(255 255 255 / 0.2); padding-top: 1rem; opacity: 0.85; }
+
+/* Clubkalender en klassement (uit Cyql) */
+.month { margin-top: 2rem; text-transform: capitalize; }
+.agenda { list-style: none; padding: 0; margin: 0; }
+.agenda-item { display: grid; grid-template-columns: 4.25rem 1fr; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.agenda-item time { align-self: start; display: flex; flex-direction: column; align-items: center; background: var(--surface); border-radius: var(--radius); padding: 0.5rem 0.25rem; border-top: 4px solid var(--accent); line-height: 1.15; }
+.agenda-item.is-event time { border-top-color: var(--primary); }
+.agenda-item .day { font-size: 0.85rem; text-transform: uppercase; color: var(--muted); }
+.agenda-item .date { font-size: 1.6rem; font-weight: 700; }
+.agenda-item .time { font-size: 0.9rem; }
+.agenda-item h3 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+.agenda-item .meta { margin: 0; color: var(--muted); }
+.labels { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.labels li { background: var(--surface); border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.85rem; }
+.agenda-item .links { margin: 0.5rem 0 0; display: flex; gap: 1rem; }
+.ranking { margin-bottom: 2.5rem; }
+.ranking table { width: 100%; border-collapse: collapse; }
+.ranking th, .ranking td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid var(--line); }
+.ranking th { font-size: 0.9rem; color: var(--muted); }
+.ranking .num { text-align: right; font-variant-numeric: tabular-nums; }
+.ranking tbody tr:nth-child(-n+3) td:first-child { font-weight: 700; color: var(--accent-text); }
+.updated { color: var(--muted); font-size: 0.9rem; }

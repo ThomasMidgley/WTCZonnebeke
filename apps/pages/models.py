@@ -159,7 +159,7 @@ class CyqlPage(BasePage):
 
 
 class CalendarPage(BasePage):
-    """Clubkalender uit Cyql (fase 2)."""
+    """Clubkalender: komende ritten en activiteiten, elke nacht uit Cyql gehaald."""
 
     parent_page_types = ["pages.HomePage"]
     max_count = 1
@@ -167,15 +167,48 @@ class CalendarPage(BasePage):
     class Meta:
         verbose_name = "clubkalender"
 
+    def get_context(self, request, *args, **kwargs):
+        from apps.cyql.models import ClubEvent, Ride, SyncRun
+
+        context = super().get_context(request, *args, **kwargs)
+        now = timezone.now()
+        items = [{"kind": "rit", "obj": ride} for ride in Ride.objects.filter(start_time__gte=now)]
+        items += [{"kind": "activiteit", "obj": event} for event in ClubEvent.objects.filter(start_time__gte=now)]
+        items.sort(key=lambda item: item["obj"].start_time)
+        months = []
+        for item in items:
+            month = timezone.localtime(item["obj"].start_time).replace(day=1).date()
+            if not months or months[-1]["month"] != month:
+                months.append({"month": month, "items": []})
+            months[-1]["items"].append(item)
+        context["months"] = months
+        context["last_sync"] = SyncRun.objects.filter(ok=True).first()
+        return context
+
 
 class RankingPage(BasePage):
-    """Klassement uit Cyql (fase 2)."""
+    """Klassementen uit Cyql. Welke getoond worden, kies je bij Cyql > Klassementen."""
+
+    show_full_names = models.BooleanField(
+        "volledige namen tonen",
+        default=False,
+        help_text="Standaard tonen we voornaam en initiaal (bv. Jan P.): de pagina is voor iedereen zichtbaar.",
+    )
+
+    content_panels = BasePage.content_panels + [FieldPanel("show_full_names")]
 
     parent_page_types = ["pages.HomePage"]
     max_count = 1
 
     class Meta:
         verbose_name = "klassement"
+
+    def get_context(self, request, *args, **kwargs):
+        from apps.cyql.models import Challenge
+
+        context = super().get_context(request, *args, **kwargs)
+        context["challenges"] = Challenge.objects.filter(is_active=True, show_on_site=True).prefetch_related("scores")
+        return context
 
 
 class ContactFormField(AbstractFormField):

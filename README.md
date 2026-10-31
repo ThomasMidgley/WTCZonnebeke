@@ -67,18 +67,26 @@ met Microsoft Entra ID als login. Dan ziet niemand buiten de club zelfs het aanm
 
 1. In het [Cyql-dashboard](https://dashboard.cyql.app) > *Settings* > *API* > *New API key*. Kopieer de sleutel meteen.
 2. Zet hem in de stack als `CYQL_API_KEY` en klik *Update the stack*.
-3. Elke nacht haalt de site de gegevens op, op het uur bij *Instellingen* > *Integraties*.
-   Het verslag van elke synchronisatie staat bij *Instellingen* > *Cyql-sync*.
+3. Elke nacht haalt de site de komende ritten en activiteiten, de klassementen en de goedgekeurde leden op,
+   op het uur bij *Instellingen* > *Integraties*.
+4. In het menu **Cyql**:
+   - *Klassementen*: kies welke klassementen op de website komen (en in welke volgorde).
+     Verborgen klassementen kosten geen API-budget.
+   - *Leden*: de ledenlijst voor de lidcontrole (enkel lezen, enkel voor beheerders).
+   - *Synchronisaties*: het verslag van elke sync, met het resterende weekbudget.
+5. Meteen synchroniseren: *Instellingen* > *Cyql nu synchroniseren*.
 
 Handig in de console van de container (Portainer > container > *Console*):
 
 | Commando | Wat |
 | --- | --- |
 | `python manage.py cyql_sync` | Nu synchroniseren |
-| `python manage.py cyql_schema` | Toont welke gegevens de Cyql-API aanbiedt (zonder sleutel) |
+| `python manage.py cyql_schema` | Toont het schema van de API. **Duur**: enkel gebruiken als het weekbudget het toelaat |
 
-Cyql rekent met een wekelijks budget per club; de site vraagt daarom alles één keer per nacht op
-en toont bezoekers enkel wat in de eigen database staat.
+Cyql rekent met een budget: 200 per vraag en 5.000 per week voor de hele club (reset maandag).
+Eén sync kost ongeveer 300 (met één getoond klassement). De site vraagt daarom alles één keer per nacht op en toont bezoekers
+enkel wat in de eigen database staat. Op het klassement staan standaard enkel voornaam en initiaal;
+volledige namen zet je aan op de pagina Klassement.
 
 ### 5. Eerste keer aanmelden
 
