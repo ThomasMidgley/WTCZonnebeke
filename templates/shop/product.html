@@ -9,7 +9,7 @@
     <div>
       <h1>{{ product.title }}</h1>
       <div class="price">€ {{ product.current_price|euro }}</div>
-      {% if product.is_event and product.price_after is not None and product.price_after_date %}
+      {% if product.is_registration and product.price_after is not None and product.price_after_date %}
         <p class="meta">{% if product.current_price == product.price_after %}Prijs sinds {{ product.price_after_date|date:"j F" }}.{% else %}Vanaf {{ product.price_after_date|date:"j F" }}: € {{ product.price_after|euro }}.{% endif %}</p>
       {% endif %}
       {% if product.description %}<p>{{ product.description|linebreaksbr }}</p>{% endif %}
@@ -17,10 +17,11 @@
         <p>Het pakket bestaat uit:</p>
         <ul>{% for c in product.components.all %}<li>{{ c.component.title }}</li>{% endfor %}</ul>
       {% endif %}
+      {% if product.is_membership %}<p class="meta">Vul de gegevens in van wie aansluit: één aansluiting per persoon.{% if product.requires_main %} Kan enkel samen met een 1e aansluiting in dezelfde bestelling.{% endif %}</p>{% endif %}
       {% if product.members_only %}<p class="meta">Enkel voor leden: we kijken je e-mailadres na in de ledenlijst.</p>{% endif %}
-      {% if product.is_event and product.is_closed %}
+      {% if product.is_registration and product.is_closed %}
         <div class="callout"><p>De inschrijvingen zijn afgesloten.</p></div>
-      {% elif product.is_event and product.is_full %}
+      {% elif product.is_registration and product.is_full %}
         <div class="callout"><p>Volzet. Er zijn geen plaatsen meer vrij.</p></div>
       {% else %}
         <form class="form" method="post" novalidate data-jumps>
@@ -34,11 +35,11 @@
             <p>{{ form.qty.errors }}<label for="{{ form.qty.id_for_label }}">{{ form.qty.label }}</label>{{ form.qty }}</p>
           {% endif %}
           {% if product.places_left is not None %}<p class="meta">Nog {{ product.places_left }} plaats{{ product.places_left|pluralize:"en" }} vrij.</p>{% endif %}
-          <button class="button" type="submit">{% if product.is_event %}Inschrijven{% else %}In mijn mandje{% endif %}</button>
+          <button class="button" type="submit">{% if product.is_membership %}Aansluiting toevoegen{% elif product.is_registration %}Inschrijven{% else %}In mijn mandje{% endif %}</button>
         </form>
       {% endif %}
-      {% if not product.is_event %}<p class="meta">{{ page.preorder_text }}</p>{% endif %}
-      {% if product.is_event and product.closes_at %}<p class="meta">Inschrijven kan tot {{ product.closes_at|date:"j F Y \o\m H.i" }} uur.</p>{% endif %}
+      {% if not product.is_registration %}<p class="meta">{{ page.preorder_text }}</p>{% endif %}
+      {% if product.is_registration and product.closes_at %}<p class="meta">Inschrijven kan tot {{ product.closes_at|date:"j F Y \o\m H.i" }} uur.</p>{% endif %}
     </div>
   </div>
 </div>

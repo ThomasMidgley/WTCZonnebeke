@@ -2,7 +2,7 @@ import requests
 from django import forms
 from django.conf import settings
 
-from .models import Question, normalize_be_phone, visible_questions
+from .models import Question, normalize_be_phone, normalize_national_number, visible_questions
 
 TURNSTILE_VERIFY = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
@@ -16,6 +16,10 @@ def field_for(question):
         return forms.EmailField(**common)
     if kind == Question.PHONE:
         return forms.CharField(max_length=30, widget=forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "tel"}), **common)
+    if kind == Question.NATIONAL_NUMBER:
+        return forms.CharField(
+            max_length=20, widget=forms.TextInput(attrs={"inputmode": "numeric", "placeholder": "JJ.MM.DD-XXX.CC"}), **common
+        )
     if kind == Question.DATE:
         return forms.DateField(widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"), **common)
     if kind == Question.CHOICE:
@@ -65,6 +69,12 @@ class QuestionsMixin:
                     self.add_error(key, "Geef een geldig Belgisch nummer, bv. 0470 12 34 56.")
                 else:
                     data[key] = phone
+            if question.kind == Question.NATIONAL_NUMBER and index in self.visible and data.get(key):
+                number = normalize_national_number(data[key])
+                if number is None:
+                    self.add_error(key, "Dit rijksregisternummer klopt niet. Je vindt het op de achterkant van je identiteitskaart.")
+                else:
+                    data[key] = number
         return data
 
     def answers(self):

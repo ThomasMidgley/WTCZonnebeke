@@ -74,7 +74,7 @@ class Cart:
             chosen = [variants.get(vid) for vid in item["variants"]]
             if not product or not product.is_visible or None in chosen:
                 continue
-            if product.is_event:
+            if product.is_registration:
                 if product.is_closed:
                     continue
             elif not chosen or any(not v.is_active for v in chosen):
@@ -107,7 +107,7 @@ def create_order(cart_lines, name, email, phone="", note=""):
         product, qty = line["product"], line["qty"]
         price = product.current_price()
         total += price * qty
-        if product.is_event:
+        if product.is_registration:
             OrderLine.objects.create(
                 order=order, product=product, title=product.title, quantity=qty, unit_price=price,
                 answers=line.get("answers") or [],
@@ -148,13 +148,29 @@ def mark_paid(order, payment_intent=""):
         order.refresh_from_db()
     send_order_mails(order)
     for line in lines:
-        if line.product.is_event and line.product.form_id:
-            answers = [["Naam", order.name], ["Gsm", order.phone], ["Aantal", line.quantity]] + line.answers
+        if line.product.is_registration and line.product.form_id:
+            if line.product.is_membership:
+                # Per persoon een antwoord; de besteller kan iemand anders zijn dan wie aansluit.
+                answers = [["Aansluiting", line.title], ["Besteld door", order.name]] + line.answers
+            else:
+                answers = [["Naam", order.name], ["Gsm", order.phone], ["Aantal", line.quantity]] + line.answers
             save_submission(line.product.form, answers, email=order.email, order_number=order.number,
                             send_confirmation=False)
-        if line.product.is_membership:
-            send_membership_mail(order)
+    if any(line.product.is_membership for line in lines):
+        send_membership_mail(order)
     return True
+
+
+def membership_problem(cart_lines):
+    """Een 2e aansluiting of gezinsaansluiting kan enkel samen met een 1e aansluiting. Geeft de foutmelding of None."""
+    memberships = [line["product"] for line in cart_lines if line["product"].is_membership]
+    dependent = [p for p in memberships if p.requires_main]
+    if dependent and not any(not p.requires_main for p in memberships):
+        names = " en ".join(sorted({p.title for p in dependent}))
+        main = next((p.title for p in Product.objects.filter(kind=Product.KIND_MEMBERSHIP, requires_main=False,
+                                                              is_visible=True)), "een 1e aansluiting")
+        return f"{names} kan enkel samen met een {main}. Voeg die ook toe aan je winkelmandje."
+    return None
 
 
 def mark_failed(order, status=Order.CANCELLED):

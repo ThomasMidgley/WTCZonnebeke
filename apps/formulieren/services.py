@@ -52,19 +52,35 @@ def xlsx_response_bytes(title, header, rows):
 
 
 def submissions_table(form):
-    """Kolommen: datum, e-mail, bestelling en elke vraag (ook vragen die intussen gewijzigd zijn)."""
+    """Kolommen: datum, e-mail, bestelling, elke vraag (ook vragen die intussen gewijzigd zijn) en de afvinkvakjes."""
     submissions = list(form.submissions.all().order_by("created_at"))
     labels = [q.label for q in form.questions.all()]
     for submission in submissions:
         for label, _ in submission.answers:
             if label not in labels:
                 labels.append(label)
-    header = ["Ingediend op", "E-mailadres", "Bestelling"] + labels
+    checks = form.check_labels()
+    header = ["Ingediend op", "E-mailadres", "Bestelling"] + labels + checks
     rows = []
     for submission in submissions:
         answers = dict((label, value) for label, value in submission.answers)
         rows.append(
             [localtime(submission.created_at).strftime("%d/%m/%Y %H:%M"), submission.email, submission.order_number]
             + [answers.get(label, "") for label in labels]
+            + ["ja" if submission.checks.get(label) else "nee" for label in checks]
         )
     return header, rows
+
+
+def save_checks(form, post):
+    """Bewaart de afvinkvakjes uit de lijst met antwoorden. Enkel wijzigingen worden weggeschreven."""
+    labels = form.check_labels()
+    changed = 0
+    for submission in form.submissions.all():
+        new = {label: f"check-{submission.pk}-{index}" in post for index, label in enumerate(labels)}
+        old = {label: bool(submission.checks.get(label)) for label in labels}
+        if new != old:
+            submission.checks = {**submission.checks, **new}
+            submission.save(update_fields=["checks"])
+            changed += 1
+    return changed

@@ -119,9 +119,13 @@ De sessie blijft 30 dagen geldig.
 - **Events en inschrijvingen** (Webshop > Artikels, soort *Event of inschrijving*): geen stock, wel een maximum aantal
   plaatsen, een einddatum, een hogere prijs vanaf een datum en extra vragen via een formulier. Deelnemerslijst en
   Excel-export via de link in de kolom *deelnemers*.
-- **Lidgeld**: een event met *dit is het lidgeld* aangevinkt. Na betaling krijgt het nieuwe lid de uitnodigingslink
-  uit Cyql > Instellingen; het formulier *Lidgeld* meldt elke inschrijving aan de adressen bij *meldingen naar*.
-  Zet de datum van de prijsverhoging elk jaar op 1 december.
+- **Lidgeld** (rubriek Lidgeld, soort *Lidgeld*): 1e aansluiting, 2e aansluiting en gratis gezinsaansluiting.
+  Eén aansluiting per persoon, met de gegevens uit het formulier *Lidgeld* (rijksregisternummer wordt gecontroleerd).
+  Een artikel met *enkel samen met een 1e aansluiting* kan pas afgerekend worden als er ook een 1e aansluiting in het
+  mandje zit. Elke aansluiting komt als antwoord bij Formulieren > Lidgeld; daar vink je *Geregistreerd bij VWB* en
+  *Betaald aan VWB* af en exporteer je naar Excel. Na betaling krijgt de besteller de uitnodigingslink uit
+  Cyql > Instellingen. Zet de datum van de prijsverhoging elk jaar op 1 december.
+- Vraagtype *Rijksregisternummer* en *afvinken door de beheerder* (één vakje per lijn) werken in elk formulier.
 - Optioneel: captcha met Cloudflare Turnstile via `TURNSTILE_SITE_KEY` en `TURNSTILE_SECRET_KEY` in de stack.
   Zonder die sleutels houdt een onzichtbare valstrik de meeste spambots tegen.
 

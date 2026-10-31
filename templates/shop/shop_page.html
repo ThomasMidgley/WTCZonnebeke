@@ -13,8 +13,9 @@
               {% if product.image %}{% image product.image fill-480x480 format-webp loading="lazy" alt="" %}{% else %}<span class="no-photo" aria-hidden="true"></span>{% endif %}
               <h3>{{ product.title }}</h3>
               <div class="price">€ {{ product.current_price|euro }}</div>
-              {% if product.is_event and product.is_closed %}<p class="meta">Afgesloten</p>
-              {% elif product.is_event and product.is_full %}<p class="meta">Volzet</p>
+              {% if product.is_registration and product.is_closed %}<p class="meta">Afgesloten</p>
+              {% elif product.is_registration and product.is_full %}<p class="meta">Volzet</p>
+              {% elif product.requires_main %}<p class="meta">Samen met een 1e aansluiting</p>
               {% elif product.is_package %}<p class="meta">Pakket voor nieuwe leden</p>
               {% elif product.members_only %}<p class="meta">Enkel voor leden</p>{% endif %}
             </a>

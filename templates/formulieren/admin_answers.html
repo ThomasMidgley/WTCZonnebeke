@@ -7,14 +7,27 @@
       <a class="button" href="{% url 'formulier_export' form_obj.pk %}">Exporteer naar Excel</a>
       <a class="button button-secondary" href="{{ form_obj.get_absolute_url }}" target="_blank" rel="noopener">Formulier openen</a>
     </p>
-    <p>{{ rows|length }} antwoord{{ rows|length|pluralize:"en" }}. Link om te delen: <code>{{ request.scheme }}://{{ request.get_host }}{{ form_obj.get_absolute_url }}</code></p>
-    {% if rows %}
-      <div style="overflow-x:auto">
-        <table class="listing">
-          <thead><tr>{% for h in header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
-          <tbody>{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
-        </table>
-      </div>
+    <p>{{ table|length }} antwoord{{ table|length|pluralize:"en" }}. Link om te delen: <code>{{ request.scheme }}://{{ request.get_host }}{{ form_obj.get_absolute_url }}</code></p>
+    {% if table %}
+      <form method="post">
+        {% csrf_token %}
+        <div style="overflow-x:auto">
+          <table class="listing">
+            <thead><tr>{% for h in checks %}<th>{{ h }}</th>{% endfor %}{% for h in header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              {% for row in table %}
+                <tr>
+                  {% for name, label, checked in row.boxes %}
+                    <td><input type="checkbox" name="{{ name }}" aria-label="{{ label }}"{% if checked %} checked{% endif %}></td>
+                  {% endfor %}
+                  {% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if checks %}<p><button class="button" type="submit">Afvinkingen opslaan</button></p>{% endif %}
+      </form>
     {% endif %}
   </div>
 {% endblock %}

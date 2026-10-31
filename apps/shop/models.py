@@ -33,13 +33,17 @@ class Product(ClusterableModel):
     KIND_ARTICLE = "artikel"
     KIND_PACKAGE = "pakket"
     KIND_EVENT = "event"
+    KIND_MEMBERSHIP = "lidgeld"
     KINDS = [
         (KIND_ARTICLE, "Artikel"),
         (KIND_PACKAGE, "Pakket (bundel van artikelen)"),
-        (KIND_EVENT, "Event of inschrijving (geen stock, bv. clubfeest of lidgeld)"),
+        (KIND_EVENT, "Event of inschrijving (geen stock, bv. clubfeest)"),
+        (KIND_MEMBERSHIP, "Lidgeld (een aansluiting per persoon)"),
     ]
     # Titels van de rubrieken in de shop, in deze volgorde.
-    CATEGORIES = [(KIND_ARTICLE, "Artikels"), (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events")]
+    CATEGORIES = [
+        (KIND_ARTICLE, "Artikels"), (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events"), (KIND_MEMBERSHIP, "Lidgeld"),
+    ]
 
     title = models.CharField("naam", max_length=120)
     slug = models.SlugField("adres", unique=True, help_text="Deel van het webadres, bv. trui-korte-mouw.")
@@ -69,9 +73,10 @@ class Product(ClusterableModel):
         "formulieren.Form", verbose_name="extra vragen", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", help_text="Een formulier uit het menu Formulieren. De vragen komen bij de inschrijving.",
     )
-    is_membership = models.BooleanField(
-        "dit is het lidgeld", default=False,
-        help_text="Na betaling krijgt het nieuwe lid de uitnodigingslink voor Cyql. Zet 'enkel voor leden' uit.",
+    requires_main = models.BooleanField(
+        "enkel samen met een 1e aansluiting", default=False,
+        help_text="Enkel voor lidgeld, bv. 2e aansluiting of gezinsaansluiting: kan enkel als er ook een "
+        "aansluiting zonder dit vinkje in het winkelmandje zit.",
     )
 
     panels = [
@@ -86,9 +91,9 @@ class Product(ClusterableModel):
                 FieldRowPanel([FieldPanel("max_places"), FieldPanel("closes_at")]),
                 FieldRowPanel([FieldPanel("price_after"), FieldPanel("price_after_date")]),
                 FieldPanel("form"),
-                FieldPanel("is_membership"),
+                FieldPanel("requires_main"),
             ],
-            heading="Enkel voor events en inschrijvingen",
+            heading="Enkel voor events en lidgeld",
         ),
         InlinePanel(
             "variants",
@@ -114,6 +119,16 @@ class Product(ClusterableModel):
     @property
     def is_event(self):
         return self.kind == self.KIND_EVENT
+
+    @property
+    def is_membership(self):
+        """Lidgeld: per persoon één aansluiting. Na betaling volgt de uitnodigingslink voor Cyql."""
+        return self.kind == self.KIND_MEMBERSHIP
+
+    @property
+    def is_registration(self):
+        """Events en lidgeld: geen maten of stock, wel eventueel extra vragen, een einddatum en een prijsverhoging."""
+        return self.kind in (self.KIND_EVENT, self.KIND_MEMBERSHIP)
 
     def participants_link(self):
         if not self.is_event:

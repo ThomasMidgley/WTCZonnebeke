@@ -24,7 +24,7 @@ class AddToCartForm(QuestionsMixin, forms.Form):
     def __init__(self, product, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.product = product
-        if product.is_event:
+        if product.is_registration:
             self.parts = []
             if product.is_membership:
                 self.fields["qty"].widget = forms.HiddenInput()
@@ -34,7 +34,7 @@ class AddToCartForm(QuestionsMixin, forms.Form):
             self.parts = [c.component for c in product.components.select_related("component")]
         else:
             self.parts = [product]
-        self.add_questions(product.form.questions.all() if product.is_event and product.form_id else [])
+        self.add_questions(product.form.questions.all() if product.is_registration and product.form_id else [])
         for index, part in enumerate(self.parts):
             label = part.title if product.is_package else "Maat"
             self.fields[f"variant_{index}"] = forms.ChoiceField(
@@ -46,7 +46,7 @@ class AddToCartForm(QuestionsMixin, forms.Form):
 
     def clean(self):
         data = super().clean()
-        if self.product.is_event:
+        if self.product.is_registration:
             data = self.clean_questions(data)
             if self.product.is_closed:
                 raise forms.ValidationError("De inschrijvingen zijn afgesloten.")
