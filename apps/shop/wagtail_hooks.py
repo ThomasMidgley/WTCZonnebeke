@@ -1,10 +1,16 @@
-from django.urls import reverse
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, render
+from django.urls import path, reverse
+from django.utils.timezone import localtime
 from wagtail import hooks
 from wagtail.admin.menu import Menu, MenuItem, SubmenuMenuItem
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.permission_policies import ModelPermissionPolicy
 
-from .models import Order, Product, StockMovement
+from apps.formulieren.services import xlsx_response_bytes
+from apps.formulieren.views import xlsx_response
+
+from .models import Order, OrderLine, Product, StockMovement
 from .stock_views import can_manage_stock as is_stock_user
 
 
@@ -32,7 +38,7 @@ class ProductViewSet(ModelViewSet):
     model = Product
     icon = "tag"
     menu_label = "Artikels"
-    list_display = ["title", "kind", "price", "members_only", "is_visible"]
+    list_display = ["title", "kind", "price", "members_only", "is_visible", "participants_link"]
     list_filter = ["kind", "members_only", "is_visible"]
     search_fields = ["title"]
 
@@ -125,3 +131,46 @@ def stock_app_menu_item():
 def register_shop_menu():
     menu = Menu(register_hook_name="register_shop_menu_item")
     return StockSubmenu("Webshop", menu, icon_name="tag", name="webshop", order=8500)
+
+
+# ---------------------------------------------------------------- deelnemers per event
+
+
+def participants_table(product):
+    lines = (
+        OrderLine.objects.filter(product=product, order__status__in=[*Order.OPEN, Order.DELIVERED])
+        .select_related("order")
+        .order_by("order__paid_at")
+    )
+    labels = []
+    for line in lines:
+        for label, _ in line.answers:
+            if label not in labels:
+                labels.append(label)
+    header = ["Bestelling", "Betaald op", "Naam", "E-mailadres", "Gsm", "Aantal", "Bedrag"] + labels
+    rows = []
+    for line in lines:
+        answers = dict((label, value) for label, value in line.answers)
+        order = line.order
+        rows.append(
+            [order.number, localtime(order.paid_at).strftime("%d/%m/%Y %H:%M") if order.paid_at else "", order.name,
+             order.email, order.phone, line.quantity, float(line.line_total)]
+            + [answers.get(label, "") for label in labels]
+        )
+    return header, rows
+
+
+def participants_view(request, pk):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    product = get_object_or_404(Product, pk=pk)
+    header, rows = participants_table(product)
+    if request.GET.get("export"):
+        return xlsx_response(xlsx_response_bytes(product.title, header, rows), f"deelnemers-{product.title}")
+    total = sum(row[5] for row in rows)
+    return render(request, "shop/admin_participants.html", {"product": product, "header": header, "rows": rows, "total": total})
+
+
+@hooks.register("register_admin_urls")
+def register_participants_url():
+    return [path("webshop/deelnemers/<int:pk>/", participants_view, name="shop_participants")]

@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.accounts.roles import stock_group
-from apps.core.models import Toegang
+from apps.core.models import CyqlApp, Toegang
 from apps.cyql.models import Member
 
 from . import services
@@ -26,7 +26,7 @@ def fake_session(id="cs_test_1"):
 
 
 @override_settings(STRIPE_SECRET_KEY="sk_test_x", STRIPE_WEBHOOK_SECRET="whsec_x")
-class ShopTests(TestCase):
+class ShopBase(TestCase):
     @classmethod
     def setUpTestData(cls):
         call_command("seed_site", verbosity=0)
@@ -60,6 +60,9 @@ class ShopTests(TestCase):
         return self.client.post("/stripe/webhook/", payload, content_type="application/json",
                                 HTTP_STRIPE_SIGNATURE=f"t={timestamp},v1={signature}")
 
+
+
+class ShopTests(ShopBase):
     # ------------------------------------------------------------ startinhoud
 
     def test_seed_from_stock_list(self):
@@ -72,7 +75,7 @@ class ShopTests(TestCase):
         self.assertEqual(self.trui_m.article_number, "41361")
         self.assertEqual(self.trui.variants.get(gender="D", size="M").article_number, "41361 D")
         call_command("seed_site", verbosity=0)
-        self.assertEqual(Product.objects.count(), 11)
+        self.assertEqual(Product.objects.count(), 12)  # 10 artikels, pakket, lidgeld
 
     def test_shop_pages(self):
         response = self.client.get("/shop/")
@@ -242,3 +245,97 @@ class CspTests(TestCase):
         # Zonder dit blokkeert de browser de doorverwijzing na het betaalformulier.
         csp = self.client.get("/winkelmandje/")["Content-Security-Policy"]
         self.assertIn("form-action 'self' https://checkout.stripe.com", csp)
+
+
+@override_settings(STRIPE_SECRET_KEY="sk_test_x", STRIPE_WEBHOOK_SECRET="whsec_x")
+class EventTests(ShopBase):
+    """Events en inschrijvingen: geen maten, wel plaatsen, prijs volgens datum en extra vragen."""
+
+    def setUp(self):
+        self.feest = Product.objects.create(
+            slug="clubfeest", title="Clubfeest", kind=Product.KIND_EVENT, price=Decimal("70"), max_places=3,
+            members_only=False,
+        )
+        self.lidgeld = Product.objects.get(slug="lidgeld")
+        cyql = CyqlApp.load()
+        cyql.invite_link = "https://cyql.example/uitnodiging"
+        cyql.save()
+
+    def test_shop_has_three_categories(self):
+        response = self.client.get("/shop/")
+        for heading in ("Artikels", "Pakketten", "Events"):
+            self.assertContains(response, f">{heading}</h2>")
+        self.assertContains(response, "Clubfeest")
+
+    def test_event_places(self):
+        response = self.client.post("/shop/clubfeest/", {"qty": "4"})
+        self.assertContains(response, "nog maar 3 plaatsen")
+        self.client.post("/shop/clubfeest/", {"qty": "3"})
+        self.checkout(email="vreemde@example.com")  # events zijn niet enkel voor leden
+        self.assertEqual(self.feest.places_left, 0)
+        self.assertContains(self.client.get("/shop/clubfeest/"), "Volzet")
+        services.expire_pending(timezone.now() + timedelta(minutes=31))
+        self.assertEqual(self.feest.places_left, 3)
+
+    def test_event_only_order_needs_no_delivery(self):
+        self.client.post("/shop/clubfeest/", {"qty": "2"})
+        self.checkout()
+        self.webhook("checkout.session.completed")
+        order = Order.objects.get()
+        self.assertEqual(order.status, Order.DELIVERED)
+        self.assertEqual(order.total, Decimal("140"))
+        self.assertEqual([m.to for m in mail.outbox], [["jan@example.com"]])  # geen mail naar de stock
+        self.assertIn("inschrijving is in orde", mail.outbox[0].body)
+        self.assertEqual(self.feest.places_taken, 2)
+
+    def test_price_after_date(self):
+        self.lidgeld.price_after_date = timezone.localdate()
+        self.lidgeld.save()
+        self.assertEqual(self.lidgeld.current_price(), Decimal("75"))
+        self.assertEqual(self.lidgeld.current_price(timezone.localdate() - timedelta(days=1)), Decimal("65"))
+
+    def test_membership_with_family_and_cyql_invite(self):
+        self.lidgeld.price_after_date = timezone.localdate() + timedelta(days=30)
+        self.lidgeld.save()
+        data = {"qty": "1", "q_0": "1980-05-01", "q_1": "Ieperstraat 1, 8980 Zonnebeke", "q_2": "B25",
+                "q_3": "Ja", "q_4": "Lien Peeters, 12/03/2012"}
+        self.assertRedirects(self.client.post("/shop/lidgeld/", data), "/winkelmandje/")
+        response = self.client.get("/afrekenen/")
+        self.assertContains(response, "akkoord met het clubreglement")
+        self.checkout(email="nieuw@example.com")
+        self.webhook("checkout.session.completed")
+        order = Order.objects.get()
+        self.assertEqual(order.total, Decimal("65"))
+        line = order.lines.get()
+        self.assertIn(["Naam en geboortedatum van elk gezinslid", "Lien Peeters, 12/03/2012"], line.answers)
+        subjects = [m.subject for m in mail.outbox]
+        self.assertTrue(any("Cyql" in s for s in subjects))
+        invite = next(m for m in mail.outbox if "Cyql" in m.subject)
+        self.assertIn("https://cyql.example/uitnodiging", invite.body)
+        submission = self.lidgeld.form.submissions.get()
+        self.assertEqual(submission.order_number, order.number)
+        self.assertIn(["Geboortedatum", "01/05/1980"], submission.answers)
+
+    def test_membership_without_family_skips_question(self):
+        data = {"qty": "1", "q_0": "1980-05-01", "q_1": "Ieperstraat 1", "q_2": "B25", "q_3": "Nee"}
+        self.assertRedirects(self.client.post("/shop/lidgeld/", data), "/winkelmandje/")
+
+    def test_closed_event(self):
+        self.feest.closes_at = timezone.now()
+        self.feest.save()
+        self.assertContains(self.client.get("/shop/clubfeest/"), "afgesloten")
+        self.client.post("/shop/clubfeest/", {"qty": "1"})
+        self.assertFalse(self.client.session.get("winkelmandje"))
+
+    def test_participants_admin(self):
+        self.client.post("/shop/clubfeest/", {"qty": "2"})
+        self.checkout()
+        self.webhook("checkout.session.completed")
+        admin = get_user_model().objects.create_superuser("beheer", "beheer@example.com", "x" * 14)
+        self.client.force_login(admin)
+        response = self.client.get(f"/admin/webshop/deelnemers/{self.feest.pk}/")
+        self.assertContains(response, "Jan Peeters")
+        self.assertContains(response, "2 deelnemers")
+        export = self.client.get(f"/admin/webshop/deelnemers/{self.feest.pk}/?export=1")
+        self.assertEqual(export["Content-Type"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.assertContains(self.client.get("/admin/shop_products/"), "2 ingeschreven")

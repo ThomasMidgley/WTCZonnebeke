@@ -32,7 +32,14 @@ SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"]
 class Product(ClusterableModel):
     KIND_ARTICLE = "artikel"
     KIND_PACKAGE = "pakket"
-    KINDS = [(KIND_ARTICLE, "Artikel"), (KIND_PACKAGE, "Pakket (bundel van artikelen)")]
+    KIND_EVENT = "event"
+    KINDS = [
+        (KIND_ARTICLE, "Artikel"),
+        (KIND_PACKAGE, "Pakket (bundel van artikelen)"),
+        (KIND_EVENT, "Event of inschrijving (geen stock, bv. clubfeest of lidgeld)"),
+    ]
+    # Titels van de rubrieken in de shop, in deze volgorde.
+    CATEGORIES = [(KIND_ARTICLE, "Artikels"), (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events")]
 
     title = models.CharField("naam", max_length=120)
     slug = models.SlugField("adres", unique=True, help_text="Deel van het webadres, bv. trui-korte-mouw.")
@@ -48,6 +55,25 @@ class Product(ClusterableModel):
     is_visible = models.BooleanField("zichtbaar in de shop", default=True)
     sort_order = models.PositiveIntegerField("volgorde", default=0)
 
+    # Enkel voor events en inschrijvingen
+    max_places = models.PositiveIntegerField(
+        "maximum aantal plaatsen", null=True, blank=True, help_text="Leeg: onbeperkt. Daarna staat het event op volzet."
+    )
+    price_after = models.DecimalField(
+        "prijs vanaf datum (€)", max_digits=7, decimal_places=2, null=True, blank=True,
+        help_text="Bv. lidgeld €75 vanaf 1 december. Leeg: altijd dezelfde prijs.",
+    )
+    price_after_date = models.DateField("vanaf", null=True, blank=True)
+    closes_at = models.DateTimeField("inschrijven kan tot", null=True, blank=True, help_text="Leeg: geen einddatum.")
+    form = models.ForeignKey(
+        "formulieren.Form", verbose_name="extra vragen", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", help_text="Een formulier uit het menu Formulieren. De vragen komen bij de inschrijving.",
+    )
+    is_membership = models.BooleanField(
+        "dit is het lidgeld", default=False,
+        help_text="Na betaling krijgt het nieuwe lid de uitnodigingslink voor Cyql. Zet 'enkel voor leden' uit.",
+    )
+
     panels = [
         MultiFieldPanel(
             [FieldPanel("title"), FieldPanel("slug"), FieldPanel("kind"), FieldPanel("price"), FieldPanel("image")],
@@ -55,6 +81,15 @@ class Product(ClusterableModel):
         ),
         FieldPanel("description"),
         FieldRowPanel([FieldPanel("members_only"), FieldPanel("is_visible"), FieldPanel("sort_order")]),
+        MultiFieldPanel(
+            [
+                FieldRowPanel([FieldPanel("max_places"), FieldPanel("closes_at")]),
+                FieldRowPanel([FieldPanel("price_after"), FieldPanel("price_after_date")]),
+                FieldPanel("form"),
+                FieldPanel("is_membership"),
+            ],
+            heading="Enkel voor events en inschrijvingen",
+        ),
         InlinePanel(
             "variants",
             heading="Maten en stock",
@@ -75,6 +110,47 @@ class Product(ClusterableModel):
     @property
     def is_package(self):
         return self.kind == self.KIND_PACKAGE
+
+    @property
+    def is_event(self):
+        return self.kind == self.KIND_EVENT
+
+    def participants_link(self):
+        if not self.is_event:
+            return ""
+        from django.urls import reverse
+        from django.utils.html import format_html
+
+        return format_html('<a href="{}">{} ingeschreven</a>', reverse("shop_participants", args=[self.pk]), self.places_taken)
+
+    participants_link.short_description = "deelnemers"
+
+    def current_price(self, today=None):
+        today = today or timezone.localdate()
+        if self.price_after is not None and self.price_after_date and today >= self.price_after_date:
+            return self.price_after
+        return self.price
+
+    @property
+    def places_taken(self):
+        """Ingeschreven (betaald) of nog aan het afrekenen."""
+        lines = OrderLine.objects.filter(product=self, package__isnull=True)
+        taken = lines.reserving() | lines.filter(order__status=Order.DELIVERED)
+        return taken.aggregate(n=Sum("quantity"))["n"] or 0
+
+    @property
+    def places_left(self):
+        if self.max_places is None:
+            return None
+        return max(self.max_places - self.places_taken, 0)
+
+    @property
+    def is_full(self):
+        return self.max_places is not None and self.places_left <= 0
+
+    @property
+    def is_closed(self):
+        return self.closes_at is not None and self.closes_at <= timezone.now()
 
     def visible_variants(self):
         return [v for v in self.variants.all() if v.is_active]
@@ -196,6 +272,11 @@ class Order(models.Model):
         super().save(*args, **kwargs)
 
     @property
+    def has_goods(self):
+        """Zit er kledij in (iets om af te halen), of enkel inschrijvingen?"""
+        return any(line.variant_id for line in self.lines.all())
+
+    @property
     def has_preorder(self):
         return any(line.is_preorder for line in self.lines.all())
 
@@ -226,6 +307,7 @@ class OrderLine(models.Model):
     quantity = models.PositiveIntegerField("aantal", default=1)
     unit_price = models.DecimalField("prijs per stuk (€)", max_digits=7, decimal_places=2)
     is_preorder = models.BooleanField("voorbestelling", default=False)
+    answers = models.JSONField("antwoorden", default=list, blank=True, help_text="Extra vragen bij een inschrijving.")
 
     objects = OrderLineQuerySet.as_manager()
 
@@ -280,8 +362,13 @@ class ShopPage(RoutablePageMixin, Page):
 
     @path("")
     def index(self, request):
-        products = Product.objects.filter(is_visible=True).select_related("image")
-        return self.render(request, context_overrides={"products": products})
+        products = list(Product.objects.filter(is_visible=True).select_related("image"))
+        categories = [
+            {"kind": kind, "title": title, "products": [p for p in products if p.kind == kind]}
+            for kind, title in Product.CATEGORIES
+        ]
+        categories = [c for c in categories if c["products"]]
+        return self.render(request, context_overrides={"products": products, "categories": categories})
 
     @path("<slug:slug>/")
     def product(self, request, slug):
@@ -294,7 +381,9 @@ class ShopPage(RoutablePageMixin, Page):
         product = get_object_or_404(Product, slug=slug, is_visible=True)
         form = AddToCartForm(product, request.POST or None)
         if request.method == "POST" and form.is_valid():
-            Cart(request.session).add(product, form.cleaned_data["variants"], form.cleaned_data["qty"])
+            Cart(request.session).add(
+                product, form.cleaned_data["variants"], form.cleaned_data["qty"], answers=form.answers() or None
+            )
             messages.success(request, f"{product.title} zit in je winkelmandje.")
             return redirect("shop_cart")
         return self.render(

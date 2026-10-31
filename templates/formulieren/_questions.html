@@ -1,0 +1,17 @@
+{% for field in form.question_fields %}
+  <div class="question" data-number="{{ forloop.counter }}">
+    {% if field.field.widget.input_type == "radio" or field.field.widget.input_type == "checkbox" %}
+      <fieldset>
+        <legend>{{ field.label }}{% if not field.field.required %} <span class="meta">(optioneel)</span>{% endif %}</legend>
+        {{ field.errors }}
+        {% for choice in field %}<label class="choice">{{ choice.tag }} {{ choice.choice_label }}</label>{% endfor %}
+        {% if field.help_text %}<p class="meta">{{ field.help_text }}</p>{% endif %}
+      </fieldset>
+    {% else %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="meta">(optioneel)</span>{% endif %}</label>
+      {{ field.errors }}
+      {{ field }}
+      {% if field.help_text %}<p class="meta">{{ field.help_text }}</p>{% endif %}
+    {% endif %}
+  </div>
+{% endfor %}

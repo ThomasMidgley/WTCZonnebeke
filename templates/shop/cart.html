@@ -11,6 +11,7 @@
           <div>
             <h2>{{ line.product.title }}</h2>
             <p class="meta">{% for v in line.variants %}{% if line.product.is_package %}{{ v.product.title }}: {% endif %}{{ v.label }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+            {% for label, value in line.answers %}<p class="meta">{{ label }}: {{ value|default:"-" }}</p>{% endfor %}
             {% if line.preorder %}<p class="badge">Voorbestelling</p>{% endif %}
           </div>
           <form method="post" class="qty">

@@ -11,8 +11,8 @@ Openbare website van wielertoeristenclub WTC Zonnebeke vzw, met een beheeromgevi
 
 1. Basis en inhoud: pagina's, huisstijl, sponsors, clubreglement, QR-infopagina, contactformulier, SSO, Docker.
 2. Cyql: clubkalender, klassement, ledenlijst voor lidcontrole.
-3. Webshop en stockbeheer met Stripe, mobiele stockomgeving (PWA). **(deze versie)**
-4. Formulierenbouwer en inschrijvingen.
+3. Webshop en stockbeheer met Stripe, mobiele stockomgeving (PWA).
+4. Formulierenbouwer en inschrijvingen. **(deze versie)**
 5. Livegang op wtc-zonnebeke.be.
 
 ## Installatie op de Raspberry Pi
@@ -111,7 +111,21 @@ blijft gereserveerd tot ze geleverd is. Niet betaald of verlopen: de reservatie 
 De stockbeheerder (rol in *Instellingen > Toegang*) opent `/stock/` op de gsm en kiest *Toevoegen aan startscherm*.
 De sessie blijft 30 dagen geldig.
 
-### 6. Eerste keer aanmelden
+### 6. Formulieren en inschrijvingen
+
+- **Formulieren** (menu Formulieren): vragen van het type tekst, e-mail, gsm (wordt +32...), datum en meerkeuze.
+  Sprongregel: "als het antwoord X is, ga naar vraag nr. Y" (0 = einde). Het formulier staat op `/formulier/<code>/`,
+  is niet gelinkt en niet geïndexeerd. Antwoorden bekijk je online of exporteer je naar Excel.
+- **Events en inschrijvingen** (Webshop > Artikels, soort *Event of inschrijving*): geen stock, wel een maximum aantal
+  plaatsen, een einddatum, een hogere prijs vanaf een datum en extra vragen via een formulier. Deelnemerslijst en
+  Excel-export via de link in de kolom *deelnemers*.
+- **Lidgeld**: een event met *dit is het lidgeld* aangevinkt. Na betaling krijgt het nieuwe lid de uitnodigingslink
+  uit Cyql > Instellingen; het formulier *Lidgeld* meldt elke inschrijving aan de adressen bij *meldingen naar*.
+  Zet de datum van de prijsverhoging elk jaar op 1 december.
+- Optioneel: captcha met Cloudflare Turnstile via `TURNSTILE_SITE_KEY` en `TURNSTILE_SECRET_KEY` in de stack.
+  Zonder die sleutels houdt een onzichtbare valstrik de meeste spambots tegen.
+
+### 7. Eerste keer aanmelden
 
 Ga naar `https://www.wtczonnebeke.be/admin/` en meld je aan met info@wtczonnebeke.be.
 Onder **Instellingen** vind je: Huisstijl, Clubgegevens, Clubreglement, Vzw-statuten, Integraties, Toegang en QR-info pijltjes.

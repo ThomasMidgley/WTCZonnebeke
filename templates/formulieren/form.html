@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static wagtailcore_tags %}
+{% block title %}{{ form_obj.title }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="wrap"><h1>{{ form_obj.title }}</h1></div></div>
+<div class="wrap narrow content">
+  {% if form_obj.intro %}<div class="rich-text">{{ form_obj.intro|richtext }}</div>{% endif %}
+  <form class="form" method="post" novalidate data-jumps>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="errorlist-box">{{ form.non_field_errors }}</div>{% endif %}
+    {% include "formulieren/_questions.html" %}
+    <p class="hp" aria-hidden="true"><label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>{{ form.website }}</p>
+    {% if turnstile_site_key %}
+      <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-language="nl"></div>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    {% endif %}
+    <button class="button" type="submit">Verstuur</button>
+  </form>
+  {% if form_obj.closes_at %}<p class="meta">Dit formulier sluit op {{ form_obj.closes_at|date:"j F Y \o\m H.i" }} uur.</p>{% endif %}
+</div>
+<script src="{% static 'js/formulier.js' %}" defer></script>
+{% endblock %}

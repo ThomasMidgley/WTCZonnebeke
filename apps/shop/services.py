@@ -10,7 +10,8 @@ from django.db.models import F
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from apps.core.models import Clubgegevens, Toegang
+from apps.core.models import Clubgegevens, CyqlApp, Toegang
+from apps.formulieren.services import save_submission
 
 from .models import Order, OrderLine, Product, StockMovement, Variant
 
@@ -35,11 +36,13 @@ class Cart:
         self.session[CART_KEY] = self.items
         self.session.modified = True
 
-    def add(self, product, variants, qty=1):
+    def add(self, product, variants, qty=1, answers=None):
         key = {"product": product.pk, "variants": [v.pk for v in variants]}
+        if answers:
+            key["answers"] = answers
         for item in self.items:
-            if item["product"] == key["product"] and item["variants"] == key["variants"]:
-                item["qty"] = min(item["qty"] + qty, 20)
+            if item["product"] == key["product"] and item["variants"] == key["variants"] and item.get("answers") == answers:
+                item["qty"] = 1 if product.is_membership else min(item["qty"] + qty, 20)
                 break
         else:
             self.items.append({**key, "qty": qty})
@@ -69,16 +72,22 @@ class Cart:
         for index, item in enumerate(self.items):
             product = products.get(item["product"])
             chosen = [variants.get(vid) for vid in item["variants"]]
-            if not product or not product.is_visible or not chosen or None in chosen:
+            if not product or not product.is_visible or None in chosen:
                 continue
-            if any(not v.is_active for v in chosen):
+            if product.is_event:
+                if product.is_closed:
+                    continue
+            elif not chosen or any(not v.is_active for v in chosen):
                 continue
+            price = product.current_price()
             result.append({
                 "index": index,
                 "product": product,
                 "variants": chosen,
+                "answers": item.get("answers") or [],
                 "qty": item["qty"],
-                "total": product.price * item["qty"],
+                "price": price,
+                "total": price * item["qty"],
                 "preorder": any(v.available < item["qty"] for v in chosen),
             })
         return result
@@ -96,21 +105,27 @@ def create_order(cart_lines, name, email, phone="", note=""):
     total = Decimal("0")
     for line in cart_lines:
         product, qty = line["product"], line["qty"]
-        total += product.price * qty
-        if product.is_package:
+        price = product.current_price()
+        total += price * qty
+        if product.is_event:
+            OrderLine.objects.create(
+                order=order, product=product, title=product.title, quantity=qty, unit_price=price,
+                answers=line.get("answers") or [],
+            )
+        elif product.is_package:
             # De prijs van het pakket staat op het eerste onderdeel; de andere onderdelen staan op 0.
             for position, variant in enumerate(line["variants"]):
                 OrderLine.objects.create(
                     order=order, product=variant.product, variant=variant, package=product,
                     title=f"{product.title}: {variant.product.title}", size=variant.label, quantity=qty,
-                    unit_price=product.price if position == 0 else Decimal("0"),
+                    unit_price=price if position == 0 else Decimal("0"),
                     is_preorder=variant.available < qty,
                 )
         else:
             variant = line["variants"][0]
             OrderLine.objects.create(
                 order=order, product=product, variant=variant, title=product.title, size=variant.label,
-                quantity=qty, unit_price=product.price, is_preorder=variant.available < qty,
+                quantity=qty, unit_price=price, is_preorder=variant.available < qty,
             )
     order.total = total
     order.save(update_fields=["total"])
@@ -126,7 +141,19 @@ def mark_paid(order, payment_intent=""):
     if not updated:
         return False
     order.refresh_from_db()
+    lines = list(order.lines.select_related("product", "product__form"))
+    if not any(line.variant_id for line in lines):
+        # Enkel inschrijvingen: niets te leveren.
+        Order.objects.filter(pk=order.pk).update(status=Order.DELIVERED, delivered_at=timezone.now())
+        order.refresh_from_db()
     send_order_mails(order)
+    for line in lines:
+        if line.product.is_event and line.product.form_id:
+            answers = [["Naam", order.name], ["Gsm", order.phone], ["Aantal", line.quantity]] + line.answers
+            save_submission(line.product.form, answers, email=order.email, order_number=order.number,
+                            send_confirmation=False)
+        if line.product.is_membership:
+            send_membership_mail(order)
     return True
 
 
@@ -187,7 +214,13 @@ def adjust_stock(variant, delta, reason, user=None, order=None):
 
 
 def _context(order):
-    return {"order": order, "lines": order.lines.all(), "club": Clubgegevens.load(), "base_url": settings.WAGTAILADMIN_BASE_URL}
+    return {
+        "order": order,
+        "lines": order.lines.all(),
+        "club": Clubgegevens.load(),
+        "cyql": CyqlApp.load(),
+        "base_url": settings.WAGTAILADMIN_BASE_URL,
+    }
 
 
 def send_customer_mail(order, template, subject):
@@ -197,10 +230,15 @@ def send_customer_mail(order, template, subject):
         logger.exception("Mail naar klant voor bestelling %s mislukt", order.number)
 
 
+def send_membership_mail(order):
+    """Nieuw lid: uitnodigingslink voor Cyql. Het bestuur keurt de aanmelding daarna goed in Cyql."""
+    send_customer_mail(order, "shop/email/membership.txt", "Welkom bij WTC Zonnebeke: meld je aan in Cyql")
+
+
 def send_order_mails(order):
     send_customer_mail(order, "shop/email/confirmation.txt", f"Bevestiging bestelling {order.number}")
     stock_emails = sorted(Toegang.load().stock_addresses())
-    if stock_emails:
+    if stock_emails and order.has_goods:
         try:
             EmailMessage(
                 f"Nieuwe bestelling {order.number}",

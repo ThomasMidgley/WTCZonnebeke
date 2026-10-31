@@ -1,4 +1,4 @@
-Beste {{ order.name }},
+{% autoescape off %}Beste {{ order.name }},
 
 Je bestelling {{ order.number }} ligt klaar.
 {% for line in lines %}- {{ line.quantity }} × {{ line.title }}{% if line.size %} ({{ line.size }}){% endif %}
@@ -8,3 +8,4 @@ Volgens het clubreglement mag het bestuur niet afgehaalde kledij na 4 weken teru
 
 Sportieve groeten,
 WTC Zonnebeke
+{% endautoescape %}

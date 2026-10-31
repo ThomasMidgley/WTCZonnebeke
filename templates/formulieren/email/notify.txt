@@ -1,0 +1,6 @@
+{% autoescape off %}Nieuw antwoord op "{{ form.title }}"{% if submission.order_number %} (bestelling {{ submission.order_number }}){% endif %}:
+{% for label, value in submission.answers %}
+- {{ label }}: {{ value|default:"-" }}{% endfor %}
+
+Alle antwoorden bekijken en exporteren: in de beheeromgeving, menu Formulieren.
+{% endautoescape %}

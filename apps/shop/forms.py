@@ -2,6 +2,7 @@ from django import forms
 from django.core.validators import RegexValidator
 
 from apps.cyql.models import Member
+from apps.formulieren.forms import QuestionsMixin
 
 
 def variant_choices(product):
@@ -12,15 +13,28 @@ def variant_choices(product):
     return choices
 
 
-class AddToCartForm(forms.Form):
-    """Maat kiezen: één keuze voor een artikel, één per onderdeel voor een pakket."""
+class AddToCartForm(QuestionsMixin, forms.Form):
+    """Maat kiezen: één keuze voor een artikel, één per onderdeel voor een pakket.
+
+    Een event heeft geen maten, wel eventueel extra vragen uit de formulierenbouwer.
+    """
 
     qty = forms.IntegerField(label="Aantal", min_value=1, max_value=20, initial=1)
 
     def __init__(self, product, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.product = product
-        self.parts = [c.component for c in product.components.select_related("component")] if product.is_package else [product]
+        if product.is_event:
+            self.parts = []
+            if product.is_membership:
+                self.fields["qty"].widget = forms.HiddenInput()
+            else:
+                self.fields["qty"].label = "Aantal personen"
+        elif product.is_package:
+            self.parts = [c.component for c in product.components.select_related("component")]
+        else:
+            self.parts = [product]
+        self.add_questions(product.form.questions.all() if product.is_event and product.form_id else [])
         for index, part in enumerate(self.parts):
             label = part.title if product.is_package else "Maat"
             self.fields[f"variant_{index}"] = forms.ChoiceField(
@@ -32,6 +46,19 @@ class AddToCartForm(forms.Form):
 
     def clean(self):
         data = super().clean()
+        if self.product.is_event:
+            data = self.clean_questions(data)
+            if self.product.is_closed:
+                raise forms.ValidationError("De inschrijvingen zijn afgesloten.")
+            left = self.product.places_left
+            if left is not None and data.get("qty", 1) > left:
+                raise forms.ValidationError(
+                    "Dit event is volzet." if left == 0 else f"Er zijn nog maar {left} plaatsen vrij."
+                )
+            if self.product.is_membership:
+                data["qty"] = 1
+            data["variants"] = []
+            return data
         chosen = []
         for index, part in enumerate(self.parts):
             value = data.get(f"variant_{index}")
@@ -55,9 +82,11 @@ class CheckoutForm(forms.Form):
     note = forms.CharField(label="Opmerking (optioneel)", required=False, widget=forms.Textarea(attrs={"rows": 3}))
     accept = forms.BooleanField(label="Ik haal de kledij af bij de kledijverantwoordelijke na een clubrit of na afspraak.")
 
-    def __init__(self, *args, members_only=False, **kwargs):
+    def __init__(self, *args, members_only=False, has_goods=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.members_only = members_only
+        if not has_goods:
+            self.fields["accept"].label = "Ik ga akkoord met het clubreglement."
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()

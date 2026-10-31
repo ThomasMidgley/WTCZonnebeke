@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.cyql",
     "apps.shop",
+    "apps.formulieren",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.contrib.settings",
@@ -199,6 +200,10 @@ CYQL_API_URL = os.environ.get("CYQL_API_URL", "https://api.cyql.app/api/graphql"
 # Stripe (webshop). Testsleutels beginnen met sk_test_.
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+
+# Cloudflare Turnstile (captcha zonder cookies) op de formulieren. Leeg = uit; dan enkel de valstrik voor bots.
+TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "").strip()
+TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "").strip()
 
 BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", DATA_DIR / "backups"))
 BACKUP_KEEP_DAYS = int(os.environ.get("BACKUP_KEEP_DAYS", "30"))

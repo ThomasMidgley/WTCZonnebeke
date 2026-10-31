@@ -3,20 +3,28 @@
 {% block content %}
 {% include "includes/page_head.html" %}
 <div class="wrap content">
-  <ul class="products">
-    {% for product in products %}
-      <li>
-        <a href="{% routablepageurl page 'product' product.slug %}">
-          {% if product.image %}{% image product.image fill-480x480 format-webp loading="lazy" alt="" %}{% else %}<span class="no-photo" aria-hidden="true"></span>{% endif %}
-          <h2>{{ product.title }}</h2>
-          <div class="price">€ {{ product.price|euro }}</div>
-          {% if product.is_package %}<p class="meta">Pakket voor nieuwe leden</p>{% elif product.members_only %}<p class="meta">Enkel voor leden</p>{% endif %}
-        </a>
-      </li>
-    {% empty %}
-      <li class="callout"><p>Er staat momenteel niets in de shop.</p></li>
-    {% endfor %}
-  </ul>
+  {% for category in categories %}
+    <section class="shop-category" aria-labelledby="cat-{{ category.kind }}">
+      <h2 id="cat-{{ category.kind }}">{{ category.title }}</h2>
+      <ul class="products">
+        {% for product in category.products %}
+          <li>
+            <a href="{% routablepageurl page 'product' product.slug %}">
+              {% if product.image %}{% image product.image fill-480x480 format-webp loading="lazy" alt="" %}{% else %}<span class="no-photo" aria-hidden="true"></span>{% endif %}
+              <h3>{{ product.title }}</h3>
+              <div class="price">€ {{ product.current_price|euro }}</div>
+              {% if product.is_event and product.is_closed %}<p class="meta">Afgesloten</p>
+              {% elif product.is_event and product.is_full %}<p class="meta">Volzet</p>
+              {% elif product.is_package %}<p class="meta">Pakket voor nieuwe leden</p>
+              {% elif product.members_only %}<p class="meta">Enkel voor leden</p>{% endif %}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% empty %}
+    <div class="callout"><p>Er staat momenteel niets in de webshop.</p></div>
+  {% endfor %}
   {% include_block page.body %}
 </div>
 {% endblock %}
