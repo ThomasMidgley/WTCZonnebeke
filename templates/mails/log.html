@@ -1,0 +1,45 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Verstuurde mails{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Verstuurde mails" subtitle="Laatste 90 dagen" icon="mail" %}
+  <div class="nice-padding">
+    <p>
+      <a href="{% url 'mails_index' %}">← Alle e-mails</a> ·
+      {% if only_failed %}<a href="{% url 'mails_log' %}">Alles tonen</a>{% else %}<a href="?mislukt=1">Enkel mislukte</a>{% endif %}
+    </p>
+    {% if page.object_list %}
+      <div style="overflow-x:auto">
+        <table class="listing">
+          <thead><tr><th>Verstuurd op</th><th>Mail</th><th>Naar</th><th>Onderwerp</th><th>Gelukt</th><th></th></tr></thead>
+          <tbody>
+            {% for entry in page %}
+              <tr>
+                <td>{{ entry.created_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ entry.label }}</td>
+                <td>{{ entry.recipients }}</td>
+                <td>{{ entry.subject }}</td>
+                <td>{% if entry.ok %}ja{% else %}<strong>nee</strong><br><span class="help">{{ entry.error|truncatechars:120 }}</span>{% endif %}</td>
+                <td>
+                  {% if entry.can_resend %}
+                    <form method="post" action="{% url 'mails_resend' entry.pk %}">{% csrf_token %}
+                      <button class="button button-small{% if entry.ok %} button-secondary{% endif %}" type="submit">Opnieuw versturen</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page.has_other_pages %}
+        <p>
+          {% if page.has_previous %}<a href="?p={{ page.previous_page_number }}{% if only_failed %}&mislukt=1{% endif %}">← Nieuwer</a>{% endif %}
+          Pagina {{ page.number }} van {{ page.paginator.num_pages }}
+          {% if page.has_next %}<a href="?p={{ page.next_page_number }}{% if only_failed %}&mislukt=1{% endif %}">Ouder →</a>{% endif %}
+        </p>
+      {% endif %}
+    {% else %}
+      <p>Nog geen mails verstuurd.</p>
+    {% endif %}
+  </div>
+{% endblock %}

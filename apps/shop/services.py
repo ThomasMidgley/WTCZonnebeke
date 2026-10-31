@@ -4,13 +4,12 @@ import logging
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.mail import EmailMessage
 from django.db import transaction
 from django.db.models import F
-from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apps.core.models import Clubgegevens, CyqlApp, Toegang
+from apps.mails import services as mails
 from apps.formulieren.services import save_submission
 
 from .models import Order, OrderLine, Product, StockMovement, Variant
@@ -187,7 +186,7 @@ def mark_ready(order, user):
     order.ready_at = timezone.now()
     order.handled_by = user
     order.save(update_fields=["status", "ready_at", "handled_by"])
-    send_customer_mail(order, "shop/email/ready.txt", f"Je bestelling {order.number} ligt klaar")
+    send_ready_mail(order)
 
 
 @transaction.atomic
@@ -227,42 +226,46 @@ def adjust_stock(variant, delta, reason, user=None, order=None):
 
 
 # ---------------------------------------------------------------- mails
+# De teksten pas je aan in het menu E-mails; zie apps/mails/registry.py voor wanneer welke mail vertrekt.
 
 
 def _context(order):
+    lines = list(order.lines.select_related("product"))
+    extra_texts = []
+    for line in lines:
+        text = (line.product.confirmation_text or "").strip()
+        if text and text not in extra_texts:
+            extra_texts.append(text)
     return {
         "order": order,
-        "lines": order.lines.all(),
+        "lines": lines,
+        "extra_texts": extra_texts,
         "club": Clubgegevens.load(),
         "cyql": CyqlApp.load(),
         "base_url": settings.WAGTAILADMIN_BASE_URL,
     }
 
 
-def send_customer_mail(order, template, subject, copy_to_club=False):
-    cc = Clubgegevens.load().copy_addresses(exclude=[order.email]) if copy_to_club else []
-    try:
-        EmailMessage(subject, render_to_string(template, _context(order)), to=[order.email], cc=cc).send()
-    except Exception:
-        logger.exception("Mail naar klant voor bestelling %s mislukt", order.number)
+def send_confirmation_mail(order):
+    return mails.send("order_confirmation", [order.email], _context(order), object_id=order.pk)
+
+
+def send_stock_mail(order):
+    stock_emails = sorted(Toegang.load().stock_addresses())
+    if not order.has_goods:
+        return False
+    return mails.send("order_new", stock_emails, _context(order), reply_to=[order.email], object_id=order.pk)
+
+
+def send_ready_mail(order):
+    return mails.send("order_ready", [order.email], _context(order), object_id=order.pk)
 
 
 def send_membership_mail(order):
     """Nieuw lid: uitnodigingslink voor Cyql. Het bestuur keurt de aanmelding daarna goed in Cyql."""
-    send_customer_mail(order, "shop/email/membership.txt", "Welkom bij WTC Zonnebeke: meld je aan in Cyql")
+    return mails.send("membership_welcome", [order.email], _context(order), object_id=order.pk)
 
 
 def send_order_mails(order):
-    # Elke bevestiging gaat in kopie naar het adres van de club; kledij ook naar de stockbeheerder.
-    send_customer_mail(order, "shop/email/confirmation.txt", f"Bevestiging bestelling {order.number}", copy_to_club=True)
-    stock_emails = sorted(Toegang.load().stock_addresses())
-    if stock_emails and order.has_goods:
-        try:
-            EmailMessage(
-                f"Nieuwe bestelling {order.number}",
-                render_to_string("shop/email/new_order.txt", _context(order)),
-                to=stock_emails,
-                reply_to=[order.email],
-            ).send()
-        except Exception:
-            logger.exception("Mail naar stockbeheer voor bestelling %s mislukt", order.number)
+    send_confirmation_mail(order)
+    send_stock_mail(order)

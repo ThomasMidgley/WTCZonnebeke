@@ -1,0 +1,5 @@
+{% load mails %}{% autoescape off %}{{ form.thanks }}
+
+Je antwoorden op "{{ form.title }}":
+{% for label, value in submission.answers %}
+- {{ label }}: {{ value|mask_national_number|default:"-" }}{% endfor %}{% endautoescape %}

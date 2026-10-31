@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.cyql",
     "apps.shop",
     "apps.formulieren",
+    "apps.mails",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.contrib.settings",

@@ -1,0 +1,3 @@
+{% autoescape off %}{% if cyql.invite_link %}1. Installeer Cyql op je gsm.
+2. Open deze uitnodiging en meld je aan bij WTC Zonnebeke: {{ cyql.invite_link }}
+3. Een bestuurslid keurt je aanmelding goed.{% else %}Het bestuur stuurt je binnenkort de uitnodiging voor Cyql.{% endif %}{% endautoescape %}

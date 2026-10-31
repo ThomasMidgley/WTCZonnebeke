@@ -1,11 +1,11 @@
 import logging
 from io import BytesIO
 
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
 from django.utils.timezone import localtime
 from openpyxl import Workbook
 from openpyxl.styles import Font
+
+from apps.mails import services as mails
 
 from .models import Submission
 
@@ -13,26 +13,40 @@ logger = logging.getLogger(__name__)
 
 
 def save_submission(form, answers, email="", order_number="", send_confirmation=True):
-    """Bewaart een antwoord en verstuurt de mails: bevestiging aan de invuller, melding aan de beheerders."""
-    submission = Submission.objects.create(form=form, answers=answers, email=email, order_number=order_number)
-    context = {"form": form, "submission": submission}
-    if email and send_confirmation:
-        from apps.core.models import Clubgegevens
+    """Bewaart een antwoord en verstuurt de mails: bevestiging aan de invuller, melding aan de beheerders.
 
-        cc = Clubgegevens.load().copy_addresses(exclude=[email])
-        _send(f"Bevestiging: {form.title}", "formulieren/email/confirmation.txt", context, [email], cc=cc)
-    notify = form.notify_addresses()
-    if notify:
-        _send(f"Nieuw antwoord: {form.title}", "formulieren/email/notify.txt", context, notify,
-              reply_to=[email] if email else None)
+    Bij een inschrijving via de webshop (order_number) kreeg de invuller al de bevestiging van de bestelling.
+    """
+    submission = Submission.objects.create(form=form, answers=answers, email=email, order_number=order_number)
+    if send_confirmation:
+        send_confirmation_mail(submission)
+    send_notify_mail(submission)
     return submission
 
 
-def _send(subject, template, context, to, reply_to=None, cc=None):
-    try:
-        EmailMessage(subject, render_to_string(template, context), to=to, cc=cc, reply_to=reply_to).send()
-    except Exception:
-        logger.exception("Mail '%s' mislukt", subject)
+def _context(submission):
+    from django.conf import settings
+
+    from apps.core.models import Clubgegevens
+
+    return {"form": submission.form, "submission": submission, "club": Clubgegevens.load(),
+            "base_url": settings.WAGTAILADMIN_BASE_URL}
+
+
+def send_confirmation_mail(submission):
+    if not (submission.email and submission.form.send_confirmation):
+        return False
+    return mails.send("form_confirmation", [submission.email], _context(submission), object_id=submission.pk)
+
+
+def send_notify_mail(submission):
+    # Kreeg het kopie-adres van de club al een kopie (van de bevestiging), dan niet nog eens een melding.
+    copied = mails.club_copy("order_confirmation" if submission.order_number else "form_confirmation")
+    if not submission.order_number and not (submission.email and submission.form.send_confirmation):
+        copied = None
+    to = [a for a in submission.form.notify_addresses() if not copied or a.lower() != copied.lower()]
+    return mails.send("form_notify", to, _context(submission), object_id=submission.pk,
+                      reply_to=[submission.email] if submission.email else None)
 
 
 def xlsx_response_bytes(title, header, rows):

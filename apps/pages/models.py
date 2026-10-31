@@ -256,10 +256,19 @@ class ContactPage(AbstractEmailForm):
     def send_mail(self, form):
         # Antwoorden gaan rechtstreeks naar de afzender van het formulier.
         reply_to = [value for name, value in form.cleaned_data.items() if isinstance(form.fields[name], forms.EmailField) and value]
-        EmailMessage(
+        from apps.mails.models import MailLog
+
+        message = EmailMessage(
             subject=self.subject or f"Contactformulier {self.title}",
             body=self.render_email(form),
             from_email=self.from_address or None,
             to=[address.strip() for address in self.to_address.split(",") if address.strip()],
             reply_to=reply_to[:1],
-        ).send(fail_silently=True)  # het bericht staat sowieso bij Formulieren in de beheeromgeving
+        )
+        # Mislukt het versturen, dan staat het bericht sowieso bij Formulieren in de beheeromgeving.
+        log = MailLog(key="contact", recipients=", ".join(message.to), subject=message.subject[:255])
+        try:
+            message.send()
+        except Exception as exc:
+            log.ok, log.error = False, str(exc)[:1000]
+        log.save()

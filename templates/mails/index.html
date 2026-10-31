@@ -1,0 +1,42 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}E-mails{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="E-mails" subtitle="Automatische mails van de website" icon="mail" %}
+  <div class="nice-padding">
+    <p>Dit zijn alle mails die de website zelf verstuurt. <em>Wanneer</em> en <em>naar wie</em> liggen vast; onderwerp en tekst pas je aan met <strong>Aanpassen</strong>.</p>
+    <p>
+      Kopie naar de club gaat naar: <strong>{{ copy_address|default:"(geen adres ingesteld)" }}</strong>
+      · <a href="{% url 'wagtailsettings:edit' 'core' 'clubgegevens' %}">wijzigen bij Instellingen &gt; Clubgegevens</a>
+    </p>
+    <p>
+      <a class="button button-secondary" href="{% url 'mails_log' %}">Verstuurde mails</a>
+      {% if failed %}<a class="button" href="{% url 'mails_log' %}?mislukt=1">{{ failed }} mislukt</a>{% endif %}
+    </p>
+    <div style="overflow-x:auto">
+      <table class="listing">
+        <thead><tr><th>Mail</th><th>Wanneer</th><th>Naar</th><th>Kopie naar de club</th><th>Versturen</th><th></th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td><strong>{{ row.spec.label }}</strong><br><span class="help">Onderwerp: {{ row.template.subject }}</span></td>
+              <td>{{ row.spec.when }}</td>
+              <td>{{ row.spec.to }}</td>
+              <td>{% if not row.spec.can_copy %}-{% elif row.template.copy_to_club %}ja{% else %}nee{% endif %}</td>
+              <td>{% if row.template.enabled %}aan{% else %}<strong>uit</strong>{% endif %}</td>
+              <td><a class="button button-small" href="{% url 'mails_edit' row.spec.key %}">Aanpassen</a></td>
+            </tr>
+          {% endfor %}
+          <tr>
+            <td><strong>{{ contact.label }}</strong></td>
+            <td>{{ contact.when }}</td>
+            <td>{{ contact.to }}</td>
+            <td>-</td>
+            <td>aan</td>
+            <td><span class="help">{{ contact.where }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="help">Rijksregisternummers komen nooit voluit in een mail: enkel de geboortedatum blijft zichtbaar.</p>
+  </div>
+{% endblock %}

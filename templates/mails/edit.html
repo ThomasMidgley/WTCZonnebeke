@@ -1,0 +1,41 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}{{ spec.label }}{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title=spec.label subtitle="E-mail aanpassen" icon="mail" %}
+  <div class="nice-padding">
+    <p><a href="{% url 'mails_index' %}">← Alle e-mails</a></p>
+    <p><strong>Wanneer:</strong> {{ spec.when }}<br><strong>Naar:</strong> {{ spec.to }}</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div class="w-field__wrapper" style="margin-bottom:1.5em">
+          <label class="w-field__label" for="{{ field.id_for_label }}">{{ field.label|capfirst }}</label>
+          {{ field.errors }}
+          {{ field }}
+          {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+        </div>
+      {% endfor %}
+      <p class="help">
+        Tussen de tekst boven en de tekst onder vult de website zelf de gegevens in (bestelling, antwoorden, links).
+        Invulvelden die je kunt gebruiken:
+        {% for name, explanation in spec.placeholders %}<code>{{ "{" }}{{ name }}{{ "}" }}</code> {{ explanation }}{% if not forloop.last %} · {% endif %}{% endfor %}
+      </p>
+      <p>
+        <button class="button" type="submit" name="action" value="save">Opslaan</button>
+        <button class="button button-secondary" type="submit" name="action" value="preview">Voorbeeld bekijken</button>
+        <button class="button button-secondary" type="submit" name="action" value="test">Testmail naar mij</button>
+      </p>
+    </form>
+    <form method="post" data-reset>
+      {% csrf_token %}
+      <button class="button button-secondary no" type="submit" name="action" value="reset"
+              onclick="return confirm('De standaardtekst terugzetten? Je eigen tekst gaat verloren.')">Standaardtekst terugzetten</button>
+    </form>
+    {% if preview %}
+      <h2 style="margin-top:2em">Voorbeeld met een fictieve {% if spec.kind == "order" %}bestelling{% else %}inzending{% endif %}</h2>
+      <p><strong>Onderwerp:</strong> {{ preview.subject }}</p>
+      <pre style="white-space:pre-wrap;background:#f6f6f6;padding:1em;border-radius:4px;max-width:48em">{{ preview.body }}</pre>
+    {% endif %}
+  </div>
+{% endblock %}

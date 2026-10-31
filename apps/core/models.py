@@ -73,6 +73,10 @@ class Clubgegevens(BaseGenericSetting):
     rpr = models.CharField("RPR", max_length=80, blank=True)
     iban = models.CharField("rekeningnummer (IBAN)", max_length=40, blank=True)
     email = models.EmailField("e-mailadres", blank=True)
+    mail_copy_to = models.EmailField(
+        "kopie van klantmails naar", blank=True,
+        help_text="Krijgt een kopie van de bevestigingsmails (zie menu E-mails). Leeg: het e-mailadres hierboven.",
+    )
     phone = models.CharField("telefoon", max_length=40, blank=True)
     meeting_place = models.CharField("vertrekplaats clubritten", max_length=200, blank=True)
     facebook_url = models.URLField("Facebook", blank=True)
@@ -85,7 +89,8 @@ class Clubgegevens(BaseGenericSetting):
             heading="Vzw",
         ),
         MultiFieldPanel(
-            [FieldPanel("iban"), FieldPanel("email"), FieldPanel("phone"), FieldPanel("meeting_place")],
+            [FieldPanel("iban"), FieldPanel("email"), FieldPanel("mail_copy_to"), FieldPanel("phone"),
+             FieldPanel("meeting_place")],
             heading="Contact",
         ),
         MultiFieldPanel(
@@ -98,10 +103,11 @@ class Clubgegevens(BaseGenericSetting):
         verbose_name = "clubgegevens"
 
     def copy_addresses(self, exclude=()):
-        """Het e-mailadres van de club, voor een kopie van elke bevestigingsmail."""
-        skip = {address.strip().lower() for address in exclude if address}
-        if self.email and self.email.strip().lower() not in skip:
-            return [self.email.strip()]
+        """Het adres voor een kopie van de bevestigingsmails: 'kopie van klantmails naar', anders het clubadres."""
+        address = (self.mail_copy_to or self.email or "").strip()
+        skip = {a.strip().lower() for a in exclude if a}
+        if address and address.lower() not in skip:
+            return [address]
         return []
 
 

@@ -1,0 +1,3 @@
+{% load mails %}{% autoescape off %}{% if submission.order_number %}Bestelling {{ submission.order_number }}
+{% endif %}{% for label, value in submission.answers %}
+- {{ label }}: {{ value|mask_national_number|default:"-" }}{% endfor %}{% endautoescape %}
