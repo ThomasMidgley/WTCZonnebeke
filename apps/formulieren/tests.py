@@ -119,10 +119,27 @@ class PublicFormTests(TestCase):
         self.assertEqual(sheet["D2"].value, "An Peeters")
         self.assertContains(self.client.get("/admin/formulieren/"), "1 antwoord")
 
+    def test_admin_clear_answers(self):
+        self.post()
+        admin = get_user_model().objects.create_superuser("beheer", "beheer@example.com", "x" * 14)
+        self.client.force_login(admin)
+        url = f"/admin/formulieren/{self.form.pk}/wissen/"
+        self.assertContains(self.client.get(f"/admin/formulieren/{self.form.pk}/antwoorden/"), url)
+        self.assertContains(self.client.get(url), "alle 1 antwoord")
+        self.assertTrue(Submission.objects.exists())  # bekijken wist niets
+        self.client.post(url)
+        self.assertFalse(Submission.objects.exists())
+        self.form.refresh_from_db()  # het formulier zelf blijft
+        self.post()  # en kan opnieuw ingevuld worden, ook met hetzelfde adres
+        self.assertEqual(Submission.objects.count(), 1)
+
     def test_admin_only_for_superusers(self):
         user = get_user_model().objects.create_user("lid", "lid@example.com", is_staff=True)
         self.client.force_login(user)
         self.assertNotEqual(self.client.get(f"/admin/formulieren/{self.form.pk}/export/").status_code, 200)
+        self.post()
+        self.client.post(f"/admin/formulieren/{self.form.pk}/wissen/")
+        self.assertTrue(Submission.objects.exists())
 
 
 class NationalNumberTests(TestCase):

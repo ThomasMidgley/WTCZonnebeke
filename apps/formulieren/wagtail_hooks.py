@@ -52,6 +52,7 @@ def superuser_only(view):
 def register_answer_urls():
     return [
         path("formulieren/<int:pk>/antwoorden/", superuser_only(views.answers_view), name="formulier_antwoorden"),
+        path("formulieren/<int:pk>/wissen/", superuser_only(views.answers_clear), name="formulier_wissen"),
         path("formulieren/<int:pk>/export/", superuser_only(views.answers_export), name="formulier_export"),
     ]
 

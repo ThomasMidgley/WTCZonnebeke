@@ -5,7 +5,6 @@ from django.utils import timezone
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel
 from wagtail.contrib.forms.models import AbstractEmailForm, AbstractFormField
-from wagtail.contrib.forms.panels import FormSubmissionsPanel
 from wagtail.fields import RichTextField, StreamField
 from wagtail.models import Orderable, Page
 
@@ -90,6 +89,44 @@ class BoardMember(Orderable):
     @property
     def task_list(self):
         return [line.strip() for line in self.tasks.splitlines() if line.strip()]
+
+
+class DownloadsPage(BasePage):
+    """Documenten die leden kunnen downloaden. De documenten zelf staan bij Documenten in de beheeromgeving."""
+
+    parent_page_types = ["pages.HomePage"]
+    max_count = 1
+
+    content_panels = Page.content_panels + [
+        FieldPanel("intro"),
+        InlinePanel(
+            "downloads", label="documenten op deze pagina",
+            help_text="Kies welke documenten zichtbaar zijn en in welke volgorde. "
+            "Nieuwe documenten laad je op bij Documenten.",
+        ),
+        FieldPanel("body"),
+    ]
+
+    class Meta:
+        verbose_name = "downloads"
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        context["downloads"] = self.downloads.select_related("document")
+        return context
+
+
+class DownloadItem(Orderable):
+    page = ParentalKey(DownloadsPage, on_delete=models.CASCADE, related_name="downloads")
+    document = models.ForeignKey("wagtaildocs.Document", verbose_name="document", on_delete=models.CASCADE, related_name="+")
+    title = models.CharField("titel", max_length=120, blank=True, help_text="Leeg laten: de titel van het document.")
+    description = models.CharField("uitleg", max_length=255, blank=True)
+
+    panels = [FieldPanel("document"), FieldPanel("title"), FieldPanel("description")]
+
+    @property
+    def display_title(self):
+        return self.title or self.document.title
 
 
 class RulesPage(Page):
@@ -232,7 +269,6 @@ class ContactPage(AbstractEmailForm):
     thank_you_text = models.TextField("bedankt-tekst", default="Bedankt voor je bericht. We antwoorden zo snel mogelijk.")
 
     content_panels = AbstractEmailForm.content_panels + [
-        FormSubmissionsPanel(),
         FieldPanel("intro"),
         InlinePanel("form_fields", label="velden"),
         FieldPanel("thank_you_text"),
@@ -253,7 +289,18 @@ class ContactPage(AbstractEmailForm):
             return self.render_landing_page(request, None, *args, **kwargs)
         return super().serve(request, *args, **kwargs)
 
+    def process_form_submission(self, form):
+        # Berichten worden niet bewaard: ze gaan enkel per mail naar het bestuur.
+        self._mail_failed = not self.send_mail(form)
+        return None
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        context["mail_failed"] = getattr(self, "_mail_failed", False)
+        return context
+
     def send_mail(self, form):
+        """Stuurt het bericht naar het bestuur. Geeft True terug als het gelukt is."""
         # Antwoorden gaan rechtstreeks naar de afzender van het formulier.
         reply_to = [value for name, value in form.cleaned_data.items() if isinstance(form.fields[name], forms.EmailField) and value]
         from apps.mails.models import MailLog
@@ -265,10 +312,10 @@ class ContactPage(AbstractEmailForm):
             to=[address.strip() for address in self.to_address.split(",") if address.strip()],
             reply_to=reply_to[:1],
         )
-        # Mislukt het versturen, dan staat het bericht sowieso bij Formulieren in de beheeromgeving.
         log = MailLog(key="contact", recipients=", ".join(message.to), subject=message.subject[:255])
         try:
             message.send()
         except Exception as exc:
             log.ok, log.error = False, str(exc)[:1000]
         log.save()
+        return log.ok

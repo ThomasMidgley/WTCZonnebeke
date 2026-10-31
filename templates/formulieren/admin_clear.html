@@ -1,0 +1,20 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Antwoorden wissen: {{ form_obj.title }}{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Antwoorden wissen" subtitle=form_obj.title icon="form" %}
+  <div class="nice-padding">
+    {% if count %}
+      <p>Je staat op het punt om <strong>alle {{ count }} antwoord{{ count|pluralize:"en" }}</strong> van dit formulier te wissen. Dat kan niet ongedaan gemaakt worden.</p>
+      <p>Bewaar ze eerst als je ze nog nodig hebt: <a href="{% url 'formulier_export' form_obj.pk %}">exporteer naar Excel</a>.</p>
+      <p>Het formulier zelf, de vragen en de link blijven bestaan.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button class="button no" type="submit">Ja, wis alle antwoorden</button>
+        <a class="button button-secondary" href="{% url 'formulier_antwoorden' form_obj.pk %}">Annuleren</a>
+      </form>
+    {% else %}
+      <p>Dit formulier heeft geen antwoorden.</p>
+      <p><a class="button button-secondary" href="{% url 'formulier_antwoorden' form_obj.pk %}">Terug</a></p>
+    {% endif %}
+  </div>
+{% endblock %}
