@@ -369,10 +369,7 @@ class Command(BaseCommand):
             statuten.save()
         CyqlApp.load().save()
         # Tenant-ID en e-mailadressen komen uit de omgeving: de repository is openbaar.
-        integraties = Integraties.load()
-        if not integraties.cyql_club_id and os.environ.get("CYQL_CLUB_ID"):
-            integraties.cyql_club_id = os.environ["CYQL_CLUB_ID"]
-            integraties.save()
+        Integraties.load().save()
         toegang = Toegang.load()
         if not toegang.admin_emails and not toegang.stock_emails:
             toegang.admin_emails = "\n".join(settings.BOOTSTRAP_ADMIN_EMAILS)

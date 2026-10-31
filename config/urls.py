@@ -6,6 +6,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from apps.accounts import views as account_views
 from apps.core import views as core_views
+from apps.cyql import views as cyql_views
 
 urlpatterns = [
     # Aanmelden via Microsoft 365 vervangt het standaard aanmeldscherm.
@@ -18,6 +19,7 @@ urlpatterns = [
     path("index.php", core_views.legacy_index, name="legacy_index"),
     path("robots.txt", core_views.robots_txt, name="robots_txt"),
     path("manifest.webmanifest", core_views.manifest, name="manifest"),
+    path("gpx/<uuid:ride_id>/", cyql_views.ride_gpx, name="ride_gpx"),
 ]
 
 if settings.DEBUG:

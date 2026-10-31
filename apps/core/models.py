@@ -127,18 +127,38 @@ class Statuten(BaseGenericSetting):
         verbose_name = "vzw-statuten"
 
 
-@register_setting(icon="mobile-alt", order=50)
+@register_setting(icon="resubmit", order=50)
 class CyqlApp(BaseGenericSetting):
+    """Instellingen voor Cyql. Staan in het menu Cyql, niet bij Instellingen."""
+
     invite_link = models.URLField(
         "uitnodigingslink Cyql-app",
         default="https://cyqlapp.app.link/vn8stXATsXb",
         help_text="De QR-code op de Cyql-pagina wordt automatisch uit deze link gemaakt.",
     )
+    sync_time = models.TimeField(
+        "synchroniseren om", default=datetime.time(3, 0), help_text="Eén keer per nacht; geldt meteen."
+    )
+    event_url = models.CharField(
+        "link naar een activiteit",
+        max_length=255,
+        blank=True,
+        help_text="Adres van een activiteit in Cyql, met {id} op de plaats van de code van de activiteit. "
+        "Leeg: de activiteit verwijst naar de pagina Cyql-app.",
+    )
 
-    panels = [FieldPanel("invite_link")]
+    panels = [
+        HelpPanel(content="<p>De API-sleutel staat niet hier maar in Portainer als <code>CYQL_API_KEY</code>.</p>"),
+        FieldPanel("sync_time"),
+        FieldPanel("invite_link"),
+        FieldPanel("event_url"),
+    ]
 
     class Meta:
-        verbose_name = "Cyql-app"
+        verbose_name = "Cyql-instellingen"
+
+    def event_link(self, cyql_id):
+        return self.event_url.replace("{id}", str(cyql_id)) if "{id}" in self.event_url else ""
 
 
 @register_setting(icon="cogs", order=60)
@@ -147,10 +167,6 @@ class Integraties(BaseGenericSetting):
     azure_client_id = models.CharField("application (client) ID", max_length=64, blank=True)
     mail_sender = models.EmailField(
         "afzender bevestigingsmails", default="info@wtczonnebeke.be", help_text="Mailbox in dezelfde tenant."
-    )
-    cyql_club_id = models.CharField("Cyql club-ID", max_length=64, blank=True)
-    cyql_sync_time = models.TimeField(
-        "Cyql synchroniseren om", default=datetime.time(3, 0), help_text="Eén keer per nacht."
     )
     stripe_publishable_key = models.CharField("Stripe publishable key", max_length=255, blank=True)
 
@@ -165,7 +181,6 @@ class Integraties(BaseGenericSetting):
             [FieldPanel("azure_tenant_id"), FieldPanel("azure_client_id"), FieldPanel("mail_sender")],
             heading="Microsoft 365 (aanmelden en e-mail)",
         ),
-        MultiFieldPanel([FieldPanel("cyql_club_id"), FieldPanel("cyql_sync_time")], heading="Cyql"),
         MultiFieldPanel([FieldPanel("stripe_publishable_key")], heading="Stripe"),
     ]
 

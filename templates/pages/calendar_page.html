@@ -23,10 +23,13 @@
             {% if item.kind == "rit" and obj.label_list %}
               <ul class="labels">{% for label in obj.label_list %}<li>{{ label }}</li>{% endfor %}</ul>
             {% endif %}
+            {% if item.kind == "activiteit" and item.link %}
+              <p class="links"><a href="{{ item.link }}"{% if item.external %} rel="noopener"{% endif %}>Bekijk in Cyql</a></p>
+            {% endif %}
             {% if item.kind == "rit" %}
               <p class="links">
                 {% if obj.share_url %}<a href="{{ obj.share_url }}" rel="noopener">Inschrijven in Cyql</a>{% endif %}
-                {% if obj.gpx_url %}<a href="{{ obj.gpx_url }}" rel="noopener">GPX</a>{% endif %}
+                {% if obj.gpx_url %}<a href="{% url 'ride_gpx' obj.cyql_id %}" download>GPX downloaden</a>{% endif %}
               </p>
             {% endif %}
           </div>

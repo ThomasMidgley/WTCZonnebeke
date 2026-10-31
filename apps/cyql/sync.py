@@ -31,7 +31,7 @@ EVENTS_QUERY = """query($page: Int) { events(fetchType: UPCOMING, page: $page, p
   items { id title startDateTime endTime location } hasNextPage } }"""
 CHALLENGES_QUERY = """query($page: Int) { challenges(page: $page, pageSize: 10) {
   items { id title scoreType startDate endDate participantCount } hasNextPage } }"""
-SCORES_QUERY = """query($id: UUID, $page: Int) { challengeScores(challengeId: $id, page: $page, pageSize: 100) {
+SCORES_QUERY = """query($id: UUID!, $page: Int) { challengeScores(challengeId: $id, page: $page, pageSize: 100) {
   items { memberName score rank rideCount } hasNextPage } }"""
 MEMBERS_QUERY = """query($page: Int) { members(memberStatus: APPROVED, page: $page, pageSize: 100) {
   items { id firstName lastName email status } hasNextPage } }"""
