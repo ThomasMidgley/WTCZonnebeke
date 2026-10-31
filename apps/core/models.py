@@ -143,8 +143,9 @@ class CyqlApp(BaseGenericSetting):
         "link naar een activiteit",
         max_length=255,
         blank=True,
-        help_text="Adres van een activiteit in Cyql, met {id} op de plaats van de code van de activiteit. "
-        "Leeg: de activiteit verwijst naar de pagina Cyql-app.",
+        help_text="Cyql geeft geen link per activiteit mee. Open een activiteit op web.cyql.app, kopieer het adres "
+        "en vervang het laatste deel (de code van die activiteit) door {id}, bv. "
+        "https://web.cyql.app/events/view/&lt;club&gt;/{id}. Leeg: de knop verwijst naar de pagina Cyql-app.",
     )
 
     panels = [
