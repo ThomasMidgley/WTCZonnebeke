@@ -1,0 +1,18 @@
+{% extends "wagtailadmin/generic/base.html" %}
+{% block titletag %}Cyql nu synchroniseren{% endblock %}
+{% block content %}
+{% include "wagtailadmin/shared/header.html" with title="Cyql nu synchroniseren" icon="resubmit" %}
+<div class="nice-padding">
+  <p>De website haalt elke nacht automatisch de kalender, de klassementen en de ledenlijst op uit Cyql.
+     Heb je net iets aangepast in Cyql, dan kan je hier meteen synchroniseren.</p>
+  <p>Eén synchronisatie kost ongeveer 300 punten van het weekbudget van de club (5.000, elke maandag opnieuw).</p>
+  {% if last_run %}
+    <p>Laatste synchronisatie: {{ last_run.started_at|date:"l j F Y, H.i" }} uur
+       ({% if last_run.ok %}gelukt{% else %}mislukt{% endif %}{% if last_run.remaining_budget is not None %}, nog {{ last_run.remaining_budget }} punten deze week{% endif %}).</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="button">Nu synchroniseren</button>
+  </form>
+</div>
+{% endblock %}

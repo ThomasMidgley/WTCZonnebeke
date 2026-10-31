@@ -3,7 +3,40 @@
 {% block content %}
 {% include "includes/page_head.html" %}
 <div class="wrap narrow content">
+  {% for group in months %}
+    <h2 class="month">{{ group.month|date:"F Y" }}</h2>
+    <ul class="agenda">
+      {% for item in group.items %}{% with obj=item.obj %}
+        <li class="agenda-item{% if item.kind == 'activiteit' %} is-event{% endif %}">
+          <time datetime="{{ obj.start_time|date:'c' }}">
+            <span class="day">{{ obj.start_time|date:"D" }}</span>
+            <span class="date">{{ obj.start_time|date:"j" }}</span>
+            <span class="time">{{ obj.start_time|time:"H.i" }}</span>
+          </time>
+          <div>
+            <h3>{{ obj.title }}</h3>
+            <p class="meta">
+              {% if obj.distance %}{{ obj.distance|floatformat:0 }} km{% endif %}
+              {% if obj.average_speed %} · {{ obj.average_speed|floatformat:0 }} km/u{% endif %}
+              {% if obj.location %}{% if obj.distance or obj.average_speed %} · {% endif %}{{ obj.location }}{% endif %}
+            </p>
+            {% if item.kind == "rit" and obj.label_list %}
+              <ul class="labels">{% for label in obj.label_list %}<li>{{ label }}</li>{% endfor %}</ul>
+            {% endif %}
+            {% if item.kind == "rit" %}
+              <p class="links">
+                {% if obj.share_url %}<a href="{{ obj.share_url }}" rel="noopener">Inschrijven in Cyql</a>{% endif %}
+                {% if obj.gpx_url %}<a href="{{ obj.gpx_url }}" rel="noopener">GPX</a>{% endif %}
+              </p>
+            {% endif %}
+          </div>
+        </li>
+      {% endwith %}{% endfor %}
+    </ul>
+  {% empty %}
+    <div class="callout"><p>Er staan momenteel geen ritten gepland. Kijk ook in de Cyql-app.</p></div>
+  {% endfor %}
   {% include_block page.body %}
-  <div class="callout"><p>Deze gegevens worden binnenkort automatisch uit de Cyql-app geladen.</p></div>
+  {% if last_sync %}<p class="updated">Bijgewerkt op {{ last_sync.started_at|date:"j F Y, H.i" }} uur.</p>{% endif %}
 </div>
 {% endblock %}
