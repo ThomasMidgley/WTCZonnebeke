@@ -1,3 +1,7 @@
+import hashlib
+import hmac
+import json
+import time
 from datetime import timedelta
 from decimal import Decimal
 from unittest import mock
@@ -47,10 +51,14 @@ class ShopTests(TestCase):
             return self.client.post("/afrekenen/", data)
 
     def webhook(self, event_type, session_id="cs_test_1", payment_status="paid"):
-        event = {"type": event_type, "data": {"object": {
-            "id": session_id, "payment_status": payment_status, "payment_intent": "pi_1"}}}
-        with mock.patch("apps.shop.payments.parse_webhook", return_value=event):
-            return self.client.post("/stripe/webhook/", b"{}", content_type="application/json")
+        # Echt ondertekend bericht, zoals Stripe het stuurt: zo test je ook de handtekening en het formaat.
+        payload = json.dumps({"id": "evt_1", "object": "event", "type": event_type, "data": {"object": {
+            "id": session_id, "object": "checkout.session", "payment_status": payment_status,
+            "payment_intent": "pi_1"}}})
+        timestamp = int(time.time())
+        signature = hmac.new(b"whsec_x", f"{timestamp}.{payload}".encode(), hashlib.sha256).hexdigest()
+        return self.client.post("/stripe/webhook/", payload, content_type="application/json",
+                                HTTP_STRIPE_SIGNATURE=f"t={timestamp},v1={signature}")
 
     # ------------------------------------------------------------ startinhoud
 
@@ -146,8 +154,8 @@ class ShopTests(TestCase):
         self.assertEqual(self.trui_m.reserved, 0)
 
     def test_webhook_bad_signature(self):
-        with mock.patch("apps.shop.payments.parse_webhook", side_effect=ValueError):
-            response = self.client.post("/stripe/webhook/", b"{}", content_type="application/json")
+        response = self.client.post("/stripe/webhook/", b"{}", content_type="application/json",
+                                    HTTP_STRIPE_SIGNATURE="t=1,v1=fout")
         self.assertEqual(response.status_code, 400)
 
     def test_expire_pending(self):

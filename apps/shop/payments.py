@@ -5,6 +5,8 @@ stel je in het Stripe-dashboard in. De sleutels komen enkel uit de omgeving:
 STRIPE_SECRET_KEY en STRIPE_WEBHOOK_SECRET.
 """
 
+import json
+
 import stripe
 from django.conf import settings
 
@@ -51,8 +53,18 @@ def create_checkout_session(order, success_url, cancel_url):
 
 
 def parse_webhook(payload, signature):
-    """Controleert de handtekening van Stripe; geeft het event terug of gooit een ValueError."""
+    """Controleert de handtekening van Stripe; geeft het event als gewone dict terug of gooit een ValueError.
+
+    Recente versies van de Stripe-bibliotheek geven objecten terug die geen dict meer zijn
+    (geen .get()); daarom lezen we na de controle de JSON zelf in.
+    """
     try:
-        return stripe.Webhook.construct_event(payload, signature, settings.STRIPE_WEBHOOK_SECRET)
-    except stripe.SignatureVerificationError as exc:
+        stripe.WebhookSignature.verify_header(
+            payload.decode("utf-8") if isinstance(payload, bytes) else payload,
+            signature or "",
+            settings.STRIPE_WEBHOOK_SECRET,
+            stripe.Webhook.DEFAULT_TOLERANCE,
+        )
+        return json.loads(payload)
+    except (stripe.SignatureVerificationError, ValueError) as exc:
         raise ValueError("ongeldige handtekening") from exc
