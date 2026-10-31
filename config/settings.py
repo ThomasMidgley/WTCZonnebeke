@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.pages",
     "apps.accounts",
+    "apps.cyql",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.contrib.settings",
@@ -187,6 +188,10 @@ EMAIL_BACKEND = os.environ.get(
     "apps.core.mail.GraphEmailBackend" if AZURE_CLIENT_SECRET else "django.core.mail.backends.console.EmailBackend",
 )
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "info@wtczonnebeke.be")
+
+# Cyql: de sleutel bepaalt de club en komt enkel uit de omgeving.
+CYQL_API_KEY = os.environ.get("CYQL_API_KEY", "").strip()
+CYQL_API_URL = os.environ.get("CYQL_API_URL", "https://api.cyql.app/api/graphql")
 
 BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", DATA_DIR / "backups"))
 BACKUP_KEEP_DAYS = int(os.environ.get("BACKUP_KEEP_DAYS", "30"))
