@@ -75,7 +75,7 @@ class ShopTests(ShopBase):
         self.assertEqual(self.trui_m.article_number, "41361")
         self.assertEqual(self.trui.variants.get(gender="D", size="M").article_number, "41361 D")
         call_command("seed_site", verbosity=0)
-        self.assertEqual(Product.objects.count(), 12)  # 10 artikels, pakket, lidgeld
+        self.assertEqual(Product.objects.count(), 14)  # 10 artikels, pakket, 3 soorten lidgeld
 
     def test_shop_pages(self):
         response = self.client.get("/shop/")
@@ -261,9 +261,9 @@ class EventTests(ShopBase):
         cyql.invite_link = "https://cyql.example/uitnodiging"
         cyql.save()
 
-    def test_shop_has_three_categories(self):
+    def test_shop_has_four_categories(self):
         response = self.client.get("/shop/")
-        for heading in ("Artikels", "Pakketten", "Events"):
+        for heading in ("Artikels", "Pakketten", "Events", "Lidgeld"):
             self.assertContains(response, f">{heading}</h2>")
         self.assertContains(response, "Clubfeest")
 
@@ -294,31 +294,85 @@ class EventTests(ShopBase):
         self.assertEqual(self.lidgeld.current_price(), Decimal("75"))
         self.assertEqual(self.lidgeld.current_price(timezone.localdate() - timedelta(days=1)), Decimal("65"))
 
+    def member_data(self, first_name="Jan", national="80050112310"):
+        return {"qty": "1", "q_0": national, "q_1": "Peeters", "q_2": first_name, "q_3": "Ieperstraat 1",
+                "q_4": "8980", "q_5": "Zonnebeke", "q_6": "1980-05-01", "q_7": "Man", "q_8": "0470 12 34 56",
+                "q_9": f"{first_name.lower()}@example.com"}
+
+    def test_membership_kinds(self):
+        self.assertEqual(
+            list(Product.objects.filter(kind=Product.KIND_MEMBERSHIP).values_list("title", "price", "requires_main")),
+            [("1e aansluiting", Decimal("65"), False), ("2e aansluiting", Decimal("65"), True),
+             ("Gratis gezinsaansluiting", Decimal("0"), True)],
+        )
+        self.assertEqual(self.lidgeld.form.check_labels(), ["Geregistreerd bij VWB", "Betaald aan VWB"])
+
+    def test_national_number_is_checked(self):
+        response = self.client.post("/shop/lidgeld/", self.member_data(national="80050112300"))
+        self.assertContains(response, "rijksregisternummer klopt niet")
+
     def test_membership_with_family_and_cyql_invite(self):
         self.lidgeld.price_after_date = timezone.localdate() + timedelta(days=30)
         self.lidgeld.save()
-        data = {"qty": "1", "q_0": "1980-05-01", "q_1": "Ieperstraat 1, 8980 Zonnebeke", "q_2": "B25",
-                "q_3": "Ja", "q_4": "Lien Peeters, 12/03/2012"}
-        self.assertRedirects(self.client.post("/shop/lidgeld/", data), "/winkelmandje/")
+        self.assertRedirects(self.client.post("/shop/lidgeld/", self.member_data()), "/winkelmandje/")
+        self.assertRedirects(
+            self.client.post("/shop/gezinsaansluiting/", self.member_data("Lien", national="12031212313")),
+            "/winkelmandje/",
+        )
         response = self.client.get("/afrekenen/")
         self.assertContains(response, "akkoord met het clubreglement")
+        with mock.patch("apps.shop.payments.create_checkout_session", return_value=fake_session()) as stripe:
+            self.client.post("/afrekenen/", {"name": "Jan Peeters", "email": "nieuw@example.com",
+                                             "phone": "0470 12 34 56", "accept": "on"})
+        order = Order.objects.get()
+        self.assertEqual(stripe.call_args.args[0], order)
+        self.webhook("checkout.session.completed")
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.DELIVERED)
+        self.assertEqual(order.total, Decimal("65"))
+        self.assertEqual(order.lines.count(), 2)
+        invite = [m for m in mail.outbox if "Cyql" in m.subject]
+        self.assertEqual(len(invite), 1)
+        self.assertIn("https://cyql.example/uitnodiging", invite[0].body)
+        submissions = list(self.lidgeld.form.submissions.order_by("pk"))
+        self.assertEqual(len(submissions), 2)  # één per persoon
+        self.assertEqual(submissions[0].order_number, order.number)
+        self.assertIn(["Aansluiting", "1e aansluiting"], submissions[0].answers)
+        self.assertIn(["Rijksregisternummer", "80.05.01-123.10"], submissions[0].answers)
+        self.assertIn(["Telefoon", "+32470123456"], submissions[0].answers)
+        self.assertIn(["Aansluiting", "Gratis gezinsaansluiting"], submissions[1].answers)
+        self.assertIn(["Voornaam", "Lien"], submissions[1].answers)
+
+    def test_family_needs_first_membership(self):
+        self.client.post("/shop/gezinsaansluiting/", self.member_data("Lien", national="12031212313"))
+        response = self.client.get("/winkelmandje/")
+        self.assertContains(response, "kan enkel samen met een 1e aansluiting")
+        self.assertNotContains(response, "/afrekenen/")
+        self.assertRedirects(self.checkout(), "/winkelmandje/")
+        self.assertFalse(Order.objects.exists())
+
+    def test_two_members_are_two_lines(self):
+        self.client.post("/shop/lidgeld/", self.member_data())
+        self.client.post("/shop/2e-aansluiting/", self.member_data("An", national="85073003328"))
+        self.client.post("/shop/2e-aansluiting/", self.member_data("An", national="85073003328"))  # dubbel: telt één keer
+        self.assertEqual([item["qty"] for item in self.client.session["winkelmandje"]], [1, 1])
+
+    def test_vwb_checks_in_answers_list(self):
+        self.client.post("/shop/lidgeld/", self.member_data())
         self.checkout(email="nieuw@example.com")
         self.webhook("checkout.session.completed")
-        order = Order.objects.get()
-        self.assertEqual(order.total, Decimal("65"))
-        line = order.lines.get()
-        self.assertIn(["Naam en geboortedatum van elk gezinslid", "Lien Peeters, 12/03/2012"], line.answers)
-        subjects = [m.subject for m in mail.outbox]
-        self.assertTrue(any("Cyql" in s for s in subjects))
-        invite = next(m for m in mail.outbox if "Cyql" in m.subject)
-        self.assertIn("https://cyql.example/uitnodiging", invite.body)
         submission = self.lidgeld.form.submissions.get()
-        self.assertEqual(submission.order_number, order.number)
-        self.assertIn(["Geboortedatum", "01/05/1980"], submission.answers)
-
-    def test_membership_without_family_skips_question(self):
-        data = {"qty": "1", "q_0": "1980-05-01", "q_1": "Ieperstraat 1", "q_2": "B25", "q_3": "Nee"}
-        self.assertRedirects(self.client.post("/shop/lidgeld/", data), "/winkelmandje/")
+        admin = get_user_model().objects.create_superuser("beheer", "beheer@example.com", "x" * 14)
+        self.client.force_login(admin)
+        url = f"/admin/formulieren/{self.lidgeld.form.pk}/antwoorden/"
+        response = self.client.get(url)
+        self.assertContains(response, "Geregistreerd bij VWB")
+        self.assertContains(response, f'name="check-{submission.pk}-0"')
+        self.client.post(url, {f"check-{submission.pk}-0": "on"})
+        submission.refresh_from_db()
+        self.assertEqual(submission.checks, {"Geregistreerd bij VWB": True, "Betaald aan VWB": False})
+        export = self.client.get(f"/admin/formulieren/{self.lidgeld.form.pk}/export/")
+        self.assertEqual(export.status_code, 200)
 
     def test_closed_event(self):
         self.feest.closes_at = timezone.now()

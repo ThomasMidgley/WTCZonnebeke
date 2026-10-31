@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib import messages
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.text import slugify
@@ -54,8 +55,26 @@ def form_done(request, code):
 
 def answers_view(request, pk):
     form_obj = get_object_or_404(Form, pk=pk)
+    checks = form_obj.check_labels()
+    if request.method == "POST" and checks:
+        changed = services.save_checks(form_obj, request.POST)
+        messages.success(request, f"{changed} antwoord{'' if changed == 1 else 'en'} bijgewerkt.")
+        return redirect("formulier_antwoorden", pk=form_obj.pk)
     header, rows = services.submissions_table(form_obj)
-    return render(request, "formulieren/admin_answers.html", {"form_obj": form_obj, "header": header, "rows": rows})
+    submissions = list(form_obj.submissions.all().order_by("created_at"))
+    # Rijen met per afvinkvakje (naam van het vakje, aangevinkt?) voor de lijst.
+    table = []
+    for submission, row in zip(submissions, rows):
+        boxes = [
+            (f"check-{submission.pk}-{index}", label, bool(submission.checks.get(label)))
+            for index, label in enumerate(checks)
+        ]
+        table.append({"cells": row[: len(row) - len(checks)], "boxes": boxes})
+    return render(
+        request,
+        "formulieren/admin_answers.html",
+        {"form_obj": form_obj, "header": header[: len(header) - len(checks)], "checks": checks, "table": table},
+    )
 
 
 def answers_export(request, pk):

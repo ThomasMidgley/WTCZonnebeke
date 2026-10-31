@@ -44,12 +44,17 @@ class Form(ClusterableModel):
     notify_emails = models.TextField(
         "meldingen naar", blank=True, help_text="Eén e-mailadres per lijn. Krijgt elk nieuw antwoord in de mailbox."
     )
+    admin_checks = models.TextField(
+        "afvinken door de beheerder", blank=True,
+        help_text="Eén vakje per lijn, bv. Geregistreerd bij VWB. Je vinkt ze per antwoord af in de lijst met antwoorden.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     panels = [
         MultiFieldPanel([FieldPanel("title"), FieldPanel("code"), FieldPanel("intro"), FieldPanel("thanks")], heading="Formulier"),
         MultiFieldPanel(
-            [FieldRowPanel([FieldPanel("is_active"), FieldPanel("closes_at")]), FieldPanel("one_per_email"), FieldPanel("notify_emails")],
+            [FieldRowPanel([FieldPanel("is_active"), FieldPanel("closes_at")]), FieldPanel("one_per_email"), FieldPanel("notify_emails"),
+             FieldPanel("admin_checks")],
             heading="Instellingen",
         ),
         InlinePanel(
@@ -81,6 +86,9 @@ class Form(ClusterableModel):
     def notify_addresses(self):
         return sorted(parse_emails(self.notify_emails))
 
+    def check_labels(self):
+        return [line.strip() for line in self.admin_checks.splitlines() if line.strip()]
+
 
 class Question(Orderable):
     TEXT = "tekst"
@@ -88,6 +96,7 @@ class Question(Orderable):
     EMAIL = "email"
     PHONE = "gsm"
     DATE = "datum"
+    NATIONAL_NUMBER = "rijksregister"
     CHOICE = "keuze"
     CHOICES_MULTI = "keuzes"
     KINDS = [
@@ -96,6 +105,7 @@ class Question(Orderable):
         (EMAIL, "E-mailadres"),
         (PHONE, "Gsm-nummer (België)"),
         (DATE, "Datum"),
+        (NATIONAL_NUMBER, "Rijksregisternummer"),
         (CHOICE, "Meerkeuze: één antwoord"),
         (CHOICES_MULTI, "Meerkeuze: meerdere antwoorden"),
     ]
@@ -136,6 +146,7 @@ class Submission(models.Model):
     answers = models.JSONField("antwoorden", default=list, help_text="Lijst van [vraag, antwoord].")
     email = models.EmailField("e-mailadres", blank=True, db_index=True)
     order_number = models.CharField("bestelling", max_length=20, blank=True)
+    checks = models.JSONField("afgevinkt", default=dict, blank=True, help_text="Per vakje: aangevinkt of niet.")
     created_at = models.DateTimeField("ingediend op", auto_now_add=True)
 
     class Meta:
@@ -162,6 +173,18 @@ def normalize_be_phone(value):
     if re.fullmatch(r"\+32[1-9]\d{7,8}", number):
         return number
     return None
+
+
+def normalize_national_number(value):
+    """Belgisch rijksregisternummer naar JJ.MM.DD-XXX.CC, of None als de controlegetallen niet kloppen."""
+    digits = re.sub(r"\D", "", value or "")
+    if len(digits) != 11:
+        return None
+    base, check = int(digits[:9]), int(digits[9:])
+    # Geboren vanaf 2000: er komt een 2 voor de eerste negen cijfers.
+    if check not in (97 - base % 97, 97 - (2_000_000_000 + base) % 97):
+        return None
+    return f"{digits[0:2]}.{digits[2:4]}.{digits[4:6]}-{digits[6:9]}.{digits[9:11]}"
 
 
 def visible_questions(questions, answers):

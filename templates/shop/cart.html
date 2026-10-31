@@ -11,15 +11,26 @@
           <div>
             <h2>{{ line.product.title }}</h2>
             <p class="meta">{% for v in line.variants %}{% if line.product.is_package %}{{ v.product.title }}: {% endif %}{{ v.label }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
-            {% for label, value in line.answers %}<p class="meta">{{ label }}: {{ value|default:"-" }}</p>{% endfor %}
+            {% if line.product.is_membership %}
+              <details class="meta"><summary>Gegevens van de aansluiting</summary>
+                {% for label, value in line.answers %}<p>{{ label }}: {{ value|default:"-" }}</p>{% endfor %}
+              </details>
+            {% else %}
+              {% for label, value in line.answers %}<p class="meta">{{ label }}: {{ value|default:"-" }}</p>{% endfor %}
+            {% endif %}
             {% if line.preorder %}<p class="badge">Voorbestelling</p>{% endif %}
           </div>
           <form method="post" class="qty">
             {% csrf_token %}
             <input type="hidden" name="index" value="{{ line.index }}">
-            <label class="visually-hidden" for="qty-{{ line.index }}">Aantal</label>
-            <input id="qty-{{ line.index }}" type="number" name="qty" min="0" max="20" value="{{ line.qty }}" inputmode="numeric">
-            <button class="button secondary" type="submit">Pas aan</button>
+            {% if not line.product.is_membership %}<label class="visually-hidden" for="qty-{{ line.index }}">Aantal</label>{% endif %}
+            {% if line.product.is_membership %}
+              <input type="hidden" name="qty" value="0">
+              <button class="button secondary" type="submit">Verwijder</button>
+            {% else %}
+              <input id="qty-{{ line.index }}" type="number" name="qty" min="0" max="20" value="{{ line.qty }}" inputmode="numeric">
+              <button class="button secondary" type="submit">Pas aan</button>
+            {% endif %}
           </form>
           <div class="price">€ {{ line.total|euro }}</div>
         </li>
@@ -27,7 +38,11 @@
     </ul>
     <p class="cart-total">Totaal <strong>€ {{ total|euro }}</strong></p>
     <p class="meta">Zet het aantal op 0 om iets te verwijderen.</p>
-    <p><a class="button" href="{% url 'shop_checkout' %}">Afrekenen</a></p>
+    {% if problem %}
+      <div class="callout" role="alert"><p>{{ problem }}</p></div>
+    {% else %}
+      <p><a class="button" href="{% url 'shop_checkout' %}">Afrekenen</a></p>
+    {% endif %}
   {% else %}
     <p>Je winkelmandje is leeg.</p>
   {% endif %}

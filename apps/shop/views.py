@@ -26,7 +26,10 @@ def cart_view(request):
             pass
         return redirect("shop_cart")
     lines = cart.lines()
-    return render(request, "shop/cart.html", {"lines": lines, "total": cart.total(lines)})
+    return render(
+        request, "shop/cart.html",
+        {"lines": lines, "total": cart.total(lines), "problem": services.membership_problem(lines)},
+    )
 
 
 @never_cache
@@ -36,14 +39,16 @@ def checkout_view(request):
     if not lines:
         return redirect("shop_cart")
     members_only = any(line["product"].members_only for line in lines)
-    has_goods = any(not line["product"].is_event for line in lines)
+    if services.membership_problem(lines):
+        return redirect("shop_cart")
+    has_goods = any(not line["product"].is_registration for line in lines)
     form = CheckoutForm(request.POST or None, members_only=members_only, has_goods=has_goods)
     if request.method == "POST" and form.is_valid():
         if not payments.is_configured():
             messages.error(request, "Online betalen is nog niet ingesteld. Probeer het later opnieuw.")
             return redirect("shop_checkout")
         for line in lines:
-            left = line["product"].places_left if line["product"].is_event else None
+            left = line["product"].places_left if line["product"].is_registration else None
             if left is not None and line["qty"] > left:
                 messages.error(request, f"{line['product'].title}: er zijn nog maar {left} plaatsen vrij.")
                 return redirect("shop_cart")

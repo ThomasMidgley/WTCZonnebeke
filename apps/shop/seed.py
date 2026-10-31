@@ -77,40 +77,57 @@ def seed_shop():
 
 
 MEMBERSHIP_QUESTIONS = [
-    # vraag, soort, verplicht, keuzes, sprong (antwoord, naar vraag nr.)
-    ("Geboortedatum", "datum", True, "", None),
-    ("Adres (straat, nummer, postcode, gemeente)", "tekst", True, "", None),
-    ("In welke groep rijd je meestal?", "keuze", True, "A30+\nB28\nB25\nB22\nWeet ik nog niet", None),
-    ("Wil je gezinsleden gratis meeverzekeren?", "keuze", True, "Ja\nNee", ("Nee", 0)),
-    ("Naam en geboortedatum van elk gezinslid", "lange_tekst", True, "", None),
+    # vraag, soort, verplicht, keuzes
+    ("Rijksregisternummer", "rijksregister", True, ""),
+    ("Naam", "tekst", True, ""),
+    ("Voornaam", "tekst", True, ""),
+    ("Straat en nummer", "tekst", True, ""),
+    ("Postcode", "tekst", True, ""),
+    ("Gemeente", "tekst", True, ""),
+    ("Geboortedatum", "datum", True, ""),
+    ("Geslacht", "keuze", True, "Man\nVrouw"),
+    ("Telefoon", "gsm", True, ""),
+    ("E-mailadres", "email", True, ""),
+]
+MEMBERSHIP_CHECKS = "Geregistreerd bij VWB\nBetaald aan VWB"
+
+# slug, naam, prijs, prijs na 1 december, enkel samen met een 1e aansluiting, beschrijving
+MEMBERSHIPS = [
+    ("lidgeld", "1e aansluiting", "65", "75", False,
+     "Lidmaatschap voor het volgende seizoen, met verzekering. Na 1 december betaal je €10 meer. "
+     "Wie niet betaald heeft voor 31 december, is uittredend lid."),
+    ("2e-aansluiting", "2e aansluiting", "65", "75", True,
+     "Een tweede aansluiting in dezelfde bestelling. Kan enkel samen met een 1e aansluiting."),
+    ("gezinsaansluiting", "Gratis gezinsaansluiting", "0", None, True,
+     "Gezinsleden verzeker je gratis mee, op voorwaarde dat één gezinslid aangesloten is. Ze hebben geen recht op "
+     "de gewone clubvoordelen (kledij, kampioenschappen, promoties). Kan enkel samen met een 1e aansluiting."),
 ]
 
 
 def seed_membership():
-    """Lidgeld met de extra vragen voor nieuwe leden. Enkel aanmaken als er nog geen lidgeld bestaat."""
+    """Lidgeld: drie soorten aansluiting met het formulier Lidgeld. Enkel aanmaken als er nog geen lidgeld bestaat."""
     from apps.core.models import Clubgegevens
     from apps.formulieren.models import Form, Question
 
-    if Product.objects.filter(is_membership=True).exists() or Product.objects.filter(slug="lidgeld").exists():
+    if Product.objects.filter(kind=Product.KIND_MEMBERSHIP).exists() or Product.objects.filter(slug="lidgeld").exists():
         return False
     form = Form.objects.filter(title="Lidgeld").first()
     if form is None:
         form = Form.objects.create(
             title="Lidgeld",
-            thanks="Bedankt! Je inschrijving als lid is goed ontvangen.",
+            thanks="Bedankt! Je aansluiting is goed ontvangen.",
             notify_emails=Clubgegevens.load().email or "",
+            admin_checks=MEMBERSHIP_CHECKS,
         )
-        for position, (label, kind, required, choices, jump) in enumerate(MEMBERSHIP_QUESTIONS):
-            Question.objects.create(
-                form=form, sort_order=position, label=label, kind=kind, required=required, choices=choices,
-                jump_answer=jump[0] if jump else "", jump_to=jump[1] if jump else None,
-            )
+        for position, (label, kind, required, choices) in enumerate(MEMBERSHIP_QUESTIONS):
+            Question.objects.create(form=form, sort_order=position, label=label, kind=kind, required=required,
+                                    choices=choices)
     today = timezone.localdate()
-    Product.objects.create(
-        slug="lidgeld", title="Lidgeld", kind=Product.KIND_EVENT, price=Decimal("65"),
-        price_after=Decimal("75"), price_after_date=datetime.date(today.year, 12, 1),
-        members_only=False, is_membership=True, form=form, sort_order=0,
-        description="Lidmaatschap voor het volgende seizoen, met verzekering. Gezinsleden verzeker je gratis mee. "
-        "Na 1 december betaal je €10 meer. Wie niet betaald heeft voor 31 december, is uittredend lid.",
-    )
+    for position, (slug, title, price, price_after, requires_main, description) in enumerate(MEMBERSHIPS):
+        Product.objects.create(
+            slug=slug, title=title, kind=Product.KIND_MEMBERSHIP, price=Decimal(price),
+            price_after=Decimal(price_after) if price_after else None,
+            price_after_date=datetime.date(today.year, 12, 1) if price_after else None,
+            members_only=False, requires_main=requires_main, form=form, sort_order=position, description=description,
+        )
     return True

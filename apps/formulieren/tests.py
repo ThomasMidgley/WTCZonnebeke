@@ -117,3 +117,14 @@ class PublicFormTests(TestCase):
         user = get_user_model().objects.create_user("lid", "lid@example.com", is_staff=True)
         self.client.force_login(user)
         self.assertNotEqual(self.client.get(f"/admin/formulieren/{self.form.pk}/export/").status_code, 200)
+
+
+class NationalNumberTests(TestCase):
+    def test_check_digits(self):
+        from .models import normalize_national_number
+
+        self.assertEqual(normalize_national_number("85073003328"), "85.07.30-033.28")
+        self.assertEqual(normalize_national_number("85.07.30-033.28"), "85.07.30-033.28")
+        self.assertEqual(normalize_national_number("12031212313"), "12.03.12-123.13")  # geboren na 2000
+        self.assertIsNone(normalize_national_number("85073003329"))
+        self.assertIsNone(normalize_national_number("8507300332"))
