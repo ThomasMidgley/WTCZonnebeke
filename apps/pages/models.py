@@ -168,12 +168,24 @@ class CalendarPage(BasePage):
         verbose_name = "clubkalender"
 
     def get_context(self, request, *args, **kwargs):
+        from apps.core.models import CyqlApp
         from apps.cyql.models import ClubEvent, Ride, SyncRun
 
         context = super().get_context(request, *args, **kwargs)
         now = timezone.now()
+        cyql = CyqlApp.load(request_or_site=request)
+        # Cyql geeft geen deellink voor activiteiten: zonder adres in de instellingen
+        # verwijzen we naar de pagina met de uitnodiging voor de app.
+        cyql_page = CyqlPage.objects.live().first()
         items = [{"kind": "rit", "obj": ride} for ride in Ride.objects.filter(start_time__gte=now)]
-        items += [{"kind": "activiteit", "obj": event} for event in ClubEvent.objects.filter(start_time__gte=now)]
+        for event in ClubEvent.objects.filter(start_time__gte=now):
+            link = cyql.event_link(event.cyql_id)
+            items.append({
+                "kind": "activiteit",
+                "obj": event,
+                "link": link or (cyql_page.url if cyql_page else ""),
+                "external": bool(link),
+            })
         items.sort(key=lambda item: item["obj"].start_time)
         months = []
         for item in items:

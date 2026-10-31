@@ -7,7 +7,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.core.models import Integraties
+from apps.core.models import CyqlApp
 
 from .client import CyqlClient, CyqlError
 from .management.commands.cyql_schema import Command as SchemaCommand
@@ -63,7 +63,7 @@ def fake_cyql(query, variables=None):
         return {"rides": {"items": [{
             "id": RIDE_ID, "title": "Zondagsrit", "startTime": "2099-11-08T08:00:00Z", "location": "Markt Zonnebeke",
             "distance": 82.4, "averageSpeed": 27.5, "rideType": "TOUR", "shareUrl": "https://cyql.app/r/1",
-            "gpxUrl": None, "labels": [{"title": "B-ploeg"}, {"title": "27 km/u"}],
+            "gpxUrl": "https://storage.cyql.test/route.gpx", "labels": [{"title": "B-ploeg"}, {"title": "27 km/u"}],
         }], "hasNextPage": False}}
     if "events(" in query:
         return {"events": {"items": [{
@@ -110,6 +110,12 @@ class SyncTests(TestCase):
         self.assertTrue(Member.is_member("jan2@example.be"))
         self.assertFalse(Member.is_member("vreemde@example.be"))
         self.assertEqual(run.remaining_budget, 4700)
+
+    def test_scores_query_uses_non_null_uuid(self):
+        # Cyql weigert de vraag als het type van $id niet exact UUID! is.
+        from .sync import SCORES_QUERY
+
+        self.assertIn("$id: UUID!", SCORES_QUERY)
 
     def test_hidden_challenge_costs_no_budget(self):
         Challenge.objects.create(cyql_id=HIDDEN_ID, title="Kilometers", show_on_site=False)
@@ -172,6 +178,34 @@ class PageTests(TestCase):
         self.assertIn("Algemene vergadering", html)
         self.assertLess(html.index("Zondagsrit"), html.index("Algemene vergadering"))
 
+    def test_gpx_is_downloaded_as_file(self):
+        html = self.client.get("/kalender/").content.decode()
+        self.assertIn(f'href="/gpx/{RIDE_ID}/" download', html)
+        upstream = mock.Mock()
+        upstream.raw.read.return_value = b"<gpx></gpx>"
+        with mock.patch("apps.cyql.views.requests.get", return_value=upstream) as get:
+            response = self.client.get(f"/gpx/{RIDE_ID}/")
+        get.assert_called_once_with("https://storage.cyql.test/route.gpx", timeout=15, stream=True)
+        self.assertEqual(response["Content-Type"], "application/gpx+xml")
+        self.assertEqual(response["Content-Disposition"], 'attachment; filename="2099-11-08-zondagsrit.gpx"')
+        self.assertEqual(response.content, b"<gpx></gpx>")
+
+    def test_gpx_of_unknown_ride_is_404(self):
+        self.assertEqual(self.client.get("/gpx/99999999-9999-9999-9999-999999999999/").status_code, 404)
+
+    def test_event_links_to_cyql_page_by_default(self):
+        html = self.client.get("/kalender/").content.decode()
+        self.assertIn('<a href="/cyql/">Bekijk in Cyql</a>', html)
+
+    def test_event_link_from_settings(self):
+        from apps.core.models import CyqlApp
+
+        cyql = CyqlApp.load()
+        cyql.event_url = "https://cyql.test/event/{id}"
+        cyql.save()
+        html = self.client.get("/kalender/").content.decode()
+        self.assertIn(f'href="https://cyql.test/event/{EVENT_ID}" rel="noopener">Bekijk in Cyql', html)
+
     def test_past_rides_are_hidden(self):
         Ride.objects.update(start_time=timezone.now() - datetime.timedelta(hours=1))
         self.assertNotIn("Zondagsrit", self.client.get("/kalender/").content.decode())
@@ -197,9 +231,9 @@ class PageTests(TestCase):
 
 class SchedulerTests(TestCase):
     def setUp(self):
-        integraties = Integraties.load()
-        integraties.cyql_sync_time = datetime.time(3, 0)
-        integraties.save()
+        cyql = CyqlApp.load()
+        cyql.sync_time = datetime.time(3, 0)
+        cyql.save()
 
     def at(self, hour, minute=0):
         return timezone.make_aware(datetime.datetime(2026, 11, 2, hour, minute))
@@ -274,6 +308,17 @@ class AdminTests(TestCase):
         self.client.force_login(admin)
         self.assertContains(self.client.get("/admin/cyql_members/"), "jan@example.be")
         self.assertEqual(self.client.get("/admin/cyql_members/new/").status_code, 302)
+
+    def test_cyql_menu_sits_between_reports_and_settings(self):
+        admin = get_user_model().objects.create_superuser("beheer", "beheer@example.be", "x" * 12)
+        self.client.force_login(admin)
+        html = self.client.get("/admin/").content.decode()
+        self.assertLess(html.index('"name": "reports"'), html.index('"name": "cyql"'))
+        self.assertLess(html.index('"name": "cyql"'), html.index('"name": "settings"'))
+        self.assertIn("/admin/settings/core/cyqlapp/", html)
+        self.assertEqual(html.count("/admin/settings/core/cyqlapp/"), 1)
+        response = self.client.get("/admin/settings/core/cyqlapp/", follow=True)
+        self.assertContains(response, "Synchroniseren om")
 
     def test_sync_now_requires_superuser(self):
         from apps.accounts.roles import apply_role

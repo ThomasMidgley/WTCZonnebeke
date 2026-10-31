@@ -1,7 +1,6 @@
 from django.urls import path, reverse
 from wagtail import hooks
-from wagtail.admin.menu import MenuItem
-from wagtail.admin.viewsets.base import ViewSetGroup
+from wagtail.admin.menu import Menu, MenuItem, SubmenuMenuItem
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.permission_policies import ModelPermissionPolicy
 
@@ -76,20 +75,16 @@ class SyncRunViewSet(ModelViewSet):
         return ReadOnlyPolicy(self.model)
 
 
-class CyqlGroup(ViewSetGroup):
-    menu_label = "Cyql"
-    menu_icon = "resubmit"
-    menu_order = 300
-    items = (
-        ChallengeViewSet("cyql_challenges"),
-        MemberViewSet("cyql_members"),
-        SyncRunViewSet("cyql_sync"),
-    )
+VIEWSETS = (
+    ChallengeViewSet("cyql_challenges"),
+    MemberViewSet("cyql_members"),
+    SyncRunViewSet("cyql_sync"),
+)
 
 
 @hooks.register("register_admin_viewset")
 def register_cyql_viewsets():
-    return CyqlGroup()
+    return list(VIEWSETS)
 
 
 @hooks.register("register_admin_urls")
@@ -102,6 +97,45 @@ class SuperuserMenuItem(MenuItem):
         return request.user.is_superuser
 
 
-@hooks.register("register_settings_menu_item")
-def register_sync_now_menu_item():
-    return SuperuserMenuItem("Cyql nu synchroniseren", reverse("cyql_sync_now"), icon_name="resubmit", order=900)
+class SuperuserSubmenu(SubmenuMenuItem):
+    def is_shown(self, request):
+        return request.user.is_superuser
+
+
+@hooks.register("register_cyql_menu_item")
+def challenges_menu_item():
+    return SuperuserMenuItem("Klassementen", reverse("cyql_challenges:index"), icon_name="list-ol", order=10)
+
+
+@hooks.register("register_cyql_menu_item")
+def members_menu_item():
+    return SuperuserMenuItem("Leden", reverse("cyql_members:index"), icon_name="group", order=20)
+
+
+@hooks.register("register_cyql_menu_item")
+def sync_log_menu_item():
+    return SuperuserMenuItem("Synchronisaties", reverse("cyql_sync:index"), icon_name="history", order=30)
+
+
+@hooks.register("register_cyql_menu_item")
+def sync_now_menu_item():
+    return SuperuserMenuItem("Nu synchroniseren", reverse("cyql_sync_now"), icon_name="resubmit", order=40)
+
+
+@hooks.register("register_cyql_menu_item")
+def settings_menu_item():
+    url = reverse("wagtailsettings:edit", args=["core", "cyqlapp"])
+    return SuperuserMenuItem("Instellingen", url, icon_name="cog", order=50)
+
+
+@hooks.register("register_admin_menu_item")
+def register_cyql_menu():
+    # Rapporten staat op 9000 en Instellingen op 10000: Cyql komt ertussen.
+    menu = Menu(register_hook_name="register_cyql_menu_item")
+    return SuperuserSubmenu("Cyql", menu, icon_name="resubmit", name="cyql", order=9500)
+
+
+@hooks.register("construct_settings_menu")
+def hide_cyql_settings(request, menu_items):
+    # De Cyql-instellingen staan in het menu Cyql.
+    menu_items[:] = [item for item in menu_items if "/cyqlapp/" not in item.url]

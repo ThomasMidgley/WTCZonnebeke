@@ -40,6 +40,13 @@ class SiteTests(TestCase):
         self.assertIn('href="https://www.postmill.be"', html)
         self.assertIn("© WTC Zonnebeke vzw", html)
 
+    def test_social_logos_on_home(self):
+        html = self.client.get("/").content.decode()
+        social = html[html.index('class="social"'):]
+        self.assertIn('href="https://www.facebook.com/zonnebeke/"', social)
+        self.assertIn('href="https://www.strava.com/clubs/107957/"', social)
+        self.assertIn("<svg", social)
+
     def test_qr_page_keeps_old_address(self):
         response = self.client.get("/index.php?id=900")
         html = response.content.decode()

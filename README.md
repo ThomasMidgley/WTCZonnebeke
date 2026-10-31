@@ -68,13 +68,17 @@ met Microsoft Entra ID als login. Dan ziet niemand buiten de club zelfs het aanm
 1. In het [Cyql-dashboard](https://dashboard.cyql.app) > *Settings* > *API* > *New API key*. Kopieer de sleutel meteen.
 2. Zet hem in de stack als `CYQL_API_KEY` en klik *Update the stack*.
 3. Elke nacht haalt de site de komende ritten en activiteiten, de klassementen en de goedgekeurde leden op,
-   op het uur bij *Instellingen* > *Integraties*.
-4. In het menu **Cyql**:
+   op het uur bij *Cyql* > *Instellingen*.
+4. Alles over Cyql staat in het menu **Cyql** (tussen Rapporten en Instellingen, enkel voor beheerders):
    - *Klassementen*: kies welke klassementen op de website komen (en in welke volgorde).
      Verborgen klassementen kosten geen API-budget.
-   - *Leden*: de ledenlijst voor de lidcontrole (enkel lezen, enkel voor beheerders).
+   - *Leden*: de ledenlijst voor de lidcontrole (enkel lezen).
    - *Synchronisaties*: het verslag van elke sync, met het resterende weekbudget.
-5. Meteen synchroniseren: *Instellingen* > *Cyql nu synchroniseren*.
+   - *Nu synchroniseren*: meteen ophalen, bv. na een wijziging in Cyql.
+   - *Instellingen*: uur van de sync, uitnodigingslink voor de app, link naar een activiteit.
+
+GPX-bestanden van ritten lopen via de website (`/gpx/<rit>/`), zodat ze als bestand downloaden
+in plaats van als XML te openen.
 
 Handig in de console van de container (Portainer > container > *Console*):
 
@@ -91,7 +95,7 @@ volledige namen zet je aan op de pagina Klassement.
 ### 5. Eerste keer aanmelden
 
 Ga naar `https://www.wtczonnebeke.be/admin/` en meld je aan met info@wtczonnebeke.be.
-Onder **Instellingen** vind je: Huisstijl, Clubgegevens, Clubreglement, Vzw-statuten, Cyql-app, Integraties, Toegang en QR-info pijltjes.
+Onder **Instellingen** vind je: Huisstijl, Clubgegevens, Clubreglement, Vzw-statuten, Integraties, Toegang en QR-info pijltjes.
 Sponsors beheer je via het menu **Sponsors**.
 
 **Noodtoegang** als Microsoft 365 niet werkt: zet `ALLOW_PASSWORD_LOGIN=1`, open in Portainer een console in de container en voer
