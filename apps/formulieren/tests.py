@@ -57,6 +57,11 @@ class PublicFormTests(TestCase):
         self.assertEqual(response["X-Robots-Tag"], "noindex, nofollow")
 
     def test_submit_and_mails(self):
+        from apps.core.models import Clubgegevens
+
+        club = Clubgegevens.load()
+        club.email = "info@example.com"
+        club.save()
         response = self.post()
         self.assertRedirects(response, f"{self.url}bedankt/")
         submission = Submission.objects.get()
@@ -64,6 +69,7 @@ class PublicFormTests(TestCase):
         self.assertIn(["Gsm", "+32470123456"], submission.answers)
         self.assertIn(["Welke shift?", "Namiddag"], submission.answers)
         self.assertEqual([m.to for m in mail.outbox], [["an@example.com"], ["secretaris@example.com"]])
+        self.assertEqual(mail.outbox[0].cc, ["info@example.com"])  # bevestiging in kopie naar de club
 
     def test_jump_skips_required_question(self):
         response = self.post(q_3="Nee", q_4=[])

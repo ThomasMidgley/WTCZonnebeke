@@ -239,9 +239,10 @@ def _context(order):
     }
 
 
-def send_customer_mail(order, template, subject):
+def send_customer_mail(order, template, subject, copy_to_club=False):
+    cc = Clubgegevens.load().copy_addresses(exclude=[order.email]) if copy_to_club else []
     try:
-        EmailMessage(subject, render_to_string(template, _context(order)), to=[order.email]).send()
+        EmailMessage(subject, render_to_string(template, _context(order)), to=[order.email], cc=cc).send()
     except Exception:
         logger.exception("Mail naar klant voor bestelling %s mislukt", order.number)
 
@@ -252,7 +253,8 @@ def send_membership_mail(order):
 
 
 def send_order_mails(order):
-    send_customer_mail(order, "shop/email/confirmation.txt", f"Bevestiging bestelling {order.number}")
+    # Elke bevestiging gaat in kopie naar het adres van de club; kledij ook naar de stockbeheerder.
+    send_customer_mail(order, "shop/email/confirmation.txt", f"Bevestiging bestelling {order.number}", copy_to_club=True)
     stock_emails = sorted(Toegang.load().stock_addresses())
     if stock_emails and order.has_goods:
         try:

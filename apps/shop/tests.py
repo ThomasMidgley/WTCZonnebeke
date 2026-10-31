@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.accounts.roles import stock_group
-from apps.core.models import CyqlApp, Toegang
+from apps.core.models import Clubgegevens, CyqlApp, Toegang
 from apps.cyql.models import Member
 
 from . import services
@@ -138,6 +138,7 @@ class ShopTests(ShopBase):
         self.assertEqual(order.status, Order.PAID)
         self.assertEqual(len(mail.outbox), 2)
         self.assertEqual(mail.outbox[0].to, ["jan@example.com"])
+        self.assertEqual(mail.outbox[0].cc, [Clubgegevens.load().email])  # kopie naar de club
         self.assertIn(order.number, mail.outbox[0].subject)
         self.assertEqual(mail.outbox[1].to, ["kledij@example.com"])
 
@@ -265,6 +266,8 @@ class EventTests(ShopBase):
         response = self.client.get("/shop/")
         for heading in ("Artikels", "Pakketten", "Events", "Lidgeld"):
             self.assertContains(response, f">{heading}</h2>")
+        content = response.content.decode()
+        self.assertLess(content.index(">Lidgeld</h2>"), content.index(">Artikels</h2>"))  # lidgeld bovenaan
         self.assertContains(response, "Clubfeest")
 
     def test_event_places(self):

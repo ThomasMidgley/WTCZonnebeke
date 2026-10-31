@@ -33,6 +33,20 @@ class SiteTests(TestCase):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
 
+    def test_photo_block_renders(self):
+        # Een foto in de inhoud van een pagina gaf een fout 500 (ongeldige image-tag).
+        from wagtail.images import get_image_model
+
+        from apps.pages.models import CyqlPage
+
+        image = get_image_model().objects.first()
+        page = CyqlPage.objects.get()
+        page.body = list(page.body.raw_data) + [{"type": "image", "value": {"image": image.pk, "caption": "Op de fiets"}}]
+        page.save_revision().publish()
+        response = self.client.get("/cyql/")
+        self.assertContains(response, "<figcaption>Op de fiets</figcaption>")
+        self.assertContains(response, 'loading="lazy"')
+
     def test_home_shows_main_sponsors_and_footer(self):
         html = self.client.get("/").content.decode()
         for name in ["Fietstechniek Gheysen", "De Oude Timmerie", "Garage Ghesquiere", "Deneut Sanitair"]:

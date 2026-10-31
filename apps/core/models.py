@@ -97,6 +97,13 @@ class Clubgegevens(BaseGenericSetting):
     class Meta:
         verbose_name = "clubgegevens"
 
+    def copy_addresses(self, exclude=()):
+        """Het e-mailadres van de club, voor een kopie van elke bevestigingsmail."""
+        skip = {address.strip().lower() for address in exclude if address}
+        if self.email and self.email.strip().lower() not in skip:
+            return [self.email.strip()]
+        return []
+
 
 @register_setting(icon="doc-full", order=30)
 class Clubreglement(BaseGenericSetting):
