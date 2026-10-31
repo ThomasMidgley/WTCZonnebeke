@@ -9,7 +9,7 @@
         <a href="{% routablepageurl page 'product' product.slug %}">
           {% if product.image %}{% image product.image fill-480x480 format-webp loading="lazy" alt="" %}{% else %}<span class="no-photo" aria-hidden="true"></span>{% endif %}
           <h2>{{ product.title }}</h2>
-          <p class="price">€ {{ product.price|euro }}</p>
+          <div class="price">€ {{ product.price|euro }}</div>
           {% if product.is_package %}<p class="meta">Pakket voor nieuwe leden</p>{% elif product.members_only %}<p class="meta">Enkel voor leden</p>{% endif %}
         </a>
       </li>
