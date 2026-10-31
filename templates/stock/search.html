@@ -1,0 +1,12 @@
+{% extends "stock/base.html" %}
+{% block title %}Zoeken{% endblock %}
+{% block heading %}Zoeken{% endblock %}
+{% block content %}
+<form method="get" class="search"><label class="visually-hidden" for="q">Zoek</label>
+  <input id="q" type="search" name="q" value="{{ query }}" placeholder="Naam, nummer, e-mail of gsm" autofocus>
+  <button class="big" type="submit">Zoek</button>
+</form>
+<ul class="cards">
+  {% for order in orders %}{% include "stock/_order_card.html" %}{% empty %}{% if query %}<li class="empty">Niets gevonden.</li>{% endif %}{% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "stock/base.html" %}
+{% block title %}Logboek{% endblock %}
+{% block heading %}Logboek{% endblock %}
+{% block content %}
+<ul class="log">
+  {% for m in movements %}
+    <li><strong>{{ m.delta|stringformat:"+d" }}</strong> {{ m.variant }} → {{ m.stock_after }}<br>{{ m.reason }}<span class="meta">{{ m.created_at|date:"j/m/Y H.i" }}{% if m.user %} · {{ m.user.first_name|default:m.user.username }}{% endif %}</span></li>
+  {% empty %}<li class="empty">Nog geen wijzigingen.</li>{% endfor %}
+</ul>
+{% endblock %}

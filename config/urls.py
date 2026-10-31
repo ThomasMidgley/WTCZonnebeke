@@ -7,6 +7,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 from apps.accounts import views as account_views
 from apps.core import views as core_views
 from apps.cyql import views as cyql_views
+from apps.shop import views as shop_views
 
 urlpatterns = [
     # Aanmelden via Microsoft 365 vervangt het standaard aanmeldscherm.
@@ -20,6 +21,11 @@ urlpatterns = [
     path("robots.txt", core_views.robots_txt, name="robots_txt"),
     path("manifest.webmanifest", core_views.manifest, name="manifest"),
     path("gpx/<uuid:ride_id>/", cyql_views.ride_gpx, name="ride_gpx"),
+    path("winkelmandje/", shop_views.cart_view, name="shop_cart"),
+    path("afrekenen/", shop_views.checkout_view, name="shop_checkout"),
+    path("bestelling/<str:token>/", shop_views.order_view, name="shop_order"),
+    path("stripe/webhook/", shop_views.stripe_webhook, name="stripe_webhook"),
+    path("stock/", include("apps.shop.stock_urls")),
 ]
 
 if settings.DEBUG:

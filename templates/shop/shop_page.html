@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags wagtailroutablepage_tags wtc %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap content">
+  <ul class="products">
+    {% for product in products %}
+      <li>
+        <a href="{% routablepageurl page 'product' product.slug %}">
+          {% if product.image %}{% image product.image fill-480x480 format-webp loading="lazy" alt="" %}{% else %}<span class="no-photo" aria-hidden="true"></span>{% endif %}
+          <h2>{{ product.title }}</h2>
+          <p class="price">€ {{ product.price|euro }}</p>
+          {% if product.is_package %}<p class="meta">Pakket voor nieuwe leden</p>{% elif product.members_only %}<p class="meta">Enkel voor leden</p>{% endif %}
+        </a>
+      </li>
+    {% empty %}
+      <li class="callout"><p>Er staat momenteel niets in de shop.</p></li>
+    {% endfor %}
+  </ul>
+  {% include_block page.body %}
+</div>
+{% endblock %}

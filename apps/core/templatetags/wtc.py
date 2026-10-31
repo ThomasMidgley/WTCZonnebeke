@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from io import BytesIO
 
 import qrcode
@@ -47,3 +48,14 @@ def is_current(menu_page, page):
     if not page:
         return False
     return page.pk == menu_page.pk or page.path.startswith(menu_page.path)
+
+
+@register.filter
+def euro(value):
+    """Bedrag op zijn Belgisch: 1.234,50 (of 41 als er geen centen zijn)."""
+    try:
+        amount = Decimal(value)
+    except (TypeError, ValueError, ArithmeticError):
+        return value
+    text = f"{amount:,.2f}".replace(",", " ").replace(".", ",").replace(" ", ".")
+    return text[:-3] if text.endswith(",00") else text

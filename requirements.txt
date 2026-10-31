@@ -5,3 +5,4 @@ whitenoise~=6.12
 msal~=1.39
 requests~=2.32
 qrcode~=8.2
+stripe~=16.1

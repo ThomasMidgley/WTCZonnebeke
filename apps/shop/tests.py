@@ -1,0 +1,229 @@
+from datetime import timedelta
+from decimal import Decimal
+from unittest import mock
+
+from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.management import call_command
+from django.template import Context, Template
+from django.test import TestCase, override_settings
+from django.utils import timezone
+
+from apps.accounts.roles import stock_group
+from apps.core.models import Toegang
+from apps.cyql.models import Member
+
+from . import services
+from .models import Order, Product, StockMovement, Variant
+
+
+def fake_session(id="cs_test_1"):
+    return id, "https://checkout.stripe.com/c/pay/cs_test_1"
+
+
+@override_settings(STRIPE_SECRET_KEY="sk_test_x", STRIPE_WEBHOOK_SECRET="whsec_x")
+class ShopTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command("seed_site", verbosity=0)
+        cls.trui = Product.objects.get(slug="trui-korte-mouw")
+        cls.pakket = Product.objects.get(slug="clubpakket")
+        cls.trui_m = cls.trui.variants.get(gender="H", size="M")
+        cls.trui_xs = cls.trui.variants.get(gender="H", size="XS")
+        Member.objects.create(cyql_id="11111111-1111-1111-1111-111111111111", first_name="Jan", last_name="Peeters",
+                              email="jan@example.com", status="APPROVED")
+        toegang = Toegang.load()
+        toegang.stock_emails = "kledij@example.com"
+        toegang.save()
+
+    def add_to_cart(self, product, variants, qty=1):
+        data = {f"variant_{i}": str(v.pk) for i, v in enumerate(variants)}
+        data["qty"] = str(qty)
+        return self.client.post(f"/shop/{product.slug}/", data)
+
+    def checkout(self, email="jan@example.com"):
+        data = {"name": "Jan Peeters", "email": email, "phone": "0470 12 34 56", "note": "", "accept": "on"}
+        with mock.patch("apps.shop.payments.create_checkout_session", return_value=fake_session()):
+            return self.client.post("/afrekenen/", data)
+
+    def webhook(self, event_type, session_id="cs_test_1", payment_status="paid"):
+        event = {"type": event_type, "data": {"object": {
+            "id": session_id, "payment_status": payment_status, "payment_intent": "pi_1"}}}
+        with mock.patch("apps.shop.payments.parse_webhook", return_value=event):
+            return self.client.post("/stripe/webhook/", b"{}", content_type="application/json")
+
+    # ------------------------------------------------------------ startinhoud
+
+    def test_seed_from_stock_list(self):
+        self.assertEqual(Product.objects.filter(kind=Product.KIND_ARTICLE).count(), 10)
+        self.assertEqual(self.pakket.price, Decimal("180"))
+        self.assertEqual(
+            [c.component.slug for c in self.pakket.components.all()],
+            ["trui-korte-mouw", "trui-lange-mouw", "korte-broek-bretellen", "lange-broek", "body", "kousen"],
+        )
+        self.assertEqual(self.trui_m.article_number, "41361")
+        self.assertEqual(self.trui.variants.get(gender="D", size="M").article_number, "41361 D")
+        call_command("seed_site", verbosity=0)
+        self.assertEqual(Product.objects.count(), 11)
+
+    def test_shop_pages(self):
+        response = self.client.get("/shop/")
+        self.assertContains(response, "Clubpakket")
+        self.assertContains(response, "41")
+        response = self.client.get("/shop/clubpakket/")
+        self.assertContains(response, "Kousen")
+        self.assertContains(response, "(voorbestelling)")
+        self.assertNotIn("sessionid", response.cookies)
+
+    # ------------------------------------------------------------ mandje en bestelling
+
+    def test_cart_and_checkout(self):
+        response = self.add_to_cart(self.trui, [self.trui_m], 2)
+        self.assertRedirects(response, "/winkelmandje/")
+        self.assertContains(self.client.get("/winkelmandje/"), "Trui korte mouw")
+        response = self.checkout()
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith("https://checkout.stripe.com/"))
+        order = Order.objects.get()
+        self.assertEqual(order.status, Order.PENDING)
+        self.assertEqual(order.total, Decimal("82"))
+        self.assertEqual(order.stripe_session_id, "cs_test_1")
+        # 30 minuten vastgehouden
+        self.assertEqual(self.trui_m.reserved, 2)
+        self.assertEqual(self.trui_m.available, 1)
+        self.assertEqual(self.client.session.get("winkelmandje"), [])
+
+    def test_package_price_on_first_part(self):
+        parts = [c.component.variants.filter(size="M").first() for c in self.pakket.components.all()]
+        self.add_to_cart(self.pakket, parts)
+        self.checkout()
+        order = Order.objects.get()
+        self.assertEqual(order.total, Decimal("180"))
+        self.assertEqual(order.lines.count(), 6)
+        self.assertEqual(sum(line.line_total for line in order.lines.all()), Decimal("180"))
+        self.assertTrue(all(line.package_id == self.pakket.pk for line in order.lines.all()))
+
+    def test_members_only(self):
+        self.add_to_cart(self.trui, [self.trui_m])
+        response = self.checkout(email="vreemde@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "enkel voor leden")
+        self.assertFalse(Order.objects.exists())
+
+    def test_preorder_when_out_of_stock(self):
+        self.add_to_cart(self.trui, [self.trui_xs])
+        self.assertContains(self.client.get("/afrekenen/"), "niet op voorraad")
+        self.checkout()
+        self.assertTrue(Order.objects.get().has_preorder)
+
+    # ------------------------------------------------------------ Stripe
+
+    def test_webhook_paid_sends_mails_once(self):
+        self.add_to_cart(self.trui, [self.trui_m])
+        self.checkout()
+        self.webhook("checkout.session.completed")
+        self.webhook("checkout.session.completed")
+        order = Order.objects.get()
+        self.assertEqual(order.status, Order.PAID)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(mail.outbox[0].to, ["jan@example.com"])
+        self.assertIn(order.number, mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[1].to, ["kledij@example.com"])
+
+    def test_webhook_bancontact_pending_then_paid(self):
+        self.add_to_cart(self.trui, [self.trui_m])
+        self.checkout()
+        self.webhook("checkout.session.completed", payment_status="unpaid")
+        self.assertEqual(Order.objects.get().status, Order.PENDING)
+        self.webhook("checkout.session.async_payment_succeeded")
+        self.assertEqual(Order.objects.get().status, Order.PAID)
+
+    def test_webhook_failed_and_expired_release_stock(self):
+        self.add_to_cart(self.trui, [self.trui_m])
+        self.checkout()
+        self.webhook("checkout.session.expired")
+        self.assertEqual(Order.objects.get().status, Order.EXPIRED)
+        self.assertEqual(self.trui_m.reserved, 0)
+
+    def test_webhook_bad_signature(self):
+        with mock.patch("apps.shop.payments.parse_webhook", side_effect=ValueError):
+            response = self.client.post("/stripe/webhook/", b"{}", content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_expire_pending(self):
+        self.add_to_cart(self.trui, [self.trui_m])
+        self.checkout()
+        self.assertEqual(services.expire_pending(timezone.now() + timedelta(minutes=31)), 1)
+        self.assertEqual(Order.objects.get().status, Order.EXPIRED)
+
+    # ------------------------------------------------------------ stockbeheer
+
+    def paid_order(self):
+        self.add_to_cart(self.trui, [self.trui_m])
+        self.checkout()
+        self.webhook("checkout.session.completed")
+        return Order.objects.get()
+
+    def stock_user(self):
+        user = get_user_model().objects.create_user("xavier", email="xavier@example.com", is_staff=True)
+        user.groups.add(stock_group())
+        return user
+
+    def test_stock_app_access(self):
+        response = self.client.get("/stock/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+        other = get_user_model().objects.create_user("lid", email="lid@example.com")
+        self.client.force_login(other)
+        self.assertEqual(self.client.get("/stock/").status_code, 403)
+        self.client.force_login(self.stock_user())
+        for url in ("/stock/", "/stock/voorraad/", "/stock/zoeken/?q=Jan", "/stock/logboek/"):
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+
+    def test_ready_and_delivered(self):
+        order = self.paid_order()
+        user = self.stock_user()
+        self.client.force_login(user)
+        self.assertContains(self.client.get("/stock/"), order.number)
+        mail.outbox.clear()
+        self.client.post(f"/stock/bestelling/{order.pk}/klaar/")
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.READY)
+        self.assertIn("klaar", mail.outbox[0].subject)
+        self.client.post(f"/stock/bestelling/{order.pk}/geleverd/")
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.DELIVERED)
+        self.trui_m.refresh_from_db()
+        self.assertEqual(self.trui_m.stock, 2)
+        self.assertEqual(self.trui_m.reserved, 0)
+        movement = StockMovement.objects.get()
+        self.assertEqual((movement.delta, movement.user), (-1, user))
+
+    def test_not_collected_after_four_weeks(self):
+        order = self.paid_order()
+        services.mark_ready(order, None)
+        self.assertFalse(services.mark_not_collected(order, None))
+        Order.objects.filter(pk=order.pk).update(ready_at=timezone.now() - timedelta(weeks=4, days=1))
+        order.refresh_from_db()
+        self.assertTrue(services.mark_not_collected(order, None))
+        self.assertEqual(self.trui_m.reserved, 0)
+
+    def test_adjust_needs_reason(self):
+        self.client.force_login(self.stock_user())
+        url = f"/stock/voorraad/{self.trui_m.pk}/"
+        response = self.client.post(url, {"delta": "5", "reason": ""})
+        self.assertEqual(response.status_code, 200)
+        self.client.post(url, {"delta": "5", "reason": "Levering Bioracer", "detail": ""})
+        self.assertEqual(Variant.objects.get(pk=self.trui_m.pk).stock, 8)
+        self.assertEqual(StockMovement.objects.get().reason, "Levering Bioracer")
+
+    def test_admin_menu_for_stock_user(self):
+        self.client.force_login(self.stock_user())
+        self.assertEqual(self.client.get("/admin/shop_orders/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/shop_products/").status_code, 302)
+
+
+class EuroFilterTests(TestCase):
+    def test_euro(self):
+        template = Template("{% load wtc %}{{ a|euro }} {{ b|euro }}")
+        self.assertEqual(template.render(Context({"a": Decimal("180.00"), "b": Decimal("1234.5")})), "180 1.234,50")

@@ -12,12 +12,13 @@ from django.db import close_old_connections
 
 from apps.cyql.scheduler import sync_due
 from apps.cyql.sync import run_sync
+from apps.shop.services import expire_pending
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Planner voor de nachtelijke Cyql-synchronisatie."
+    help = "Planner: nachtelijke Cyql-synchronisatie en verlopen bestellingen in de webshop."
 
     def handle(self, *args, **options):
         if not settings.CYQL_API_KEY:
@@ -30,4 +31,9 @@ class Command(BaseCommand):
                     logger.info("Cyql-sync %s: %s", "gelukt" if run.ok else "mislukt", run.message.replace("\n", "; "))
             except Exception:
                 logger.exception("Planner: fout bij de Cyql-sync")
+            try:
+                # Wie niet binnen 30 minuten betaalt, geeft de gereserveerde maten weer vrij.
+                expire_pending()
+            except Exception:
+                logger.exception("Planner: fout bij het vrijgeven van verlopen bestellingen")
             time.sleep(60)

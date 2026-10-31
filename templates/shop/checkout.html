@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load wtc %}
+{% block title %}Afrekenen{% endblock %}
+{% block content %}
+<div class="page-head"><div class="wrap"><h1>Afrekenen</h1></div></div>
+<div class="wrap narrow content">
+  <ul class="summary">
+    {% for line in lines %}<li><span>{{ line.qty }} × {{ line.product.title }}</span><span>€ {{ line.total|euro }}</span></li>{% endfor %}
+    <li class="sum"><span>Totaal</span><span>€ {{ total|euro }}</span></li>
+  </ul>
+  {% if preorder %}<div class="callout"><p>Een deel van je bestelling is niet op voorraad. Dat is een voorbestelling: we laten je weten wanneer alles klaarligt.</p></div>{% endif %}
+  <form class="form" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="button" type="submit">Betalen</button>
+  </form>
+  <p class="meta">Je betaalt veilig bij Stripe met Bancontact, kaart, Apple Pay of Google Pay. Er worden geen kosten aangerekend.</p>
+</div>
+{% endblock %}
