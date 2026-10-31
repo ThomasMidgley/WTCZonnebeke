@@ -1,14 +1,17 @@
 import datetime
+import io
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.core.models import Integraties
 
 from .client import CyqlClient, CyqlError
-from .management.commands.cyql_schema import render_type
+from .management.commands.cyql_schema import Command as SchemaCommand
+from .management.commands.cyql_schema import render_type, type_name
 from .models import ClubStats, SyncRun
 from .scheduler import sync_due
 from .sync import run_sync
@@ -103,6 +106,26 @@ class SchemaRenderTests(TestCase):
             "enumValues": None,
         }
         self.assertEqual(render_type(t), "type Query {\n  rides(pageSize: Int): RidePage!\n}")
+
+
+    def test_truncated_type_is_marked(self):
+        self.assertEqual(type_name({"kind": "NON_NULL", "name": None}), "…!")
+
+    def test_schema_falls_back_to_shallower_query(self):
+        def answer(query, variables=None):
+            if "__schema" in query:
+                return {"__schema": {"queryType": {"name": "Query"}, "types": [{"name": "Query", "kind": "OBJECT"}]}}
+            if query.count("ofType") > 3:  # meer dan 1 niveau
+                raise CyqlError("ExceedingMaxDepth", code="ExceedingMaxDepth")
+            return {"__type": {"name": "Query", "kind": "OBJECT", "fields": [], "inputFields": None, "enumValues": None}}
+
+        client = mock.Mock(remaining=None)
+        client.query.side_effect = answer
+        out = io.StringIO()
+        with mock.patch("apps.cyql.management.commands.cyql_schema.CyqlClient", return_value=client):
+            call_command(SchemaCommand(), stdout=out)
+        self.assertIn("# Diepte: 1 niveaus", out.getvalue())
+        self.assertIn("type Query {", out.getvalue())
 
 
 class AdminTests(TestCase):
