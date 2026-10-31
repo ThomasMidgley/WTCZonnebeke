@@ -28,7 +28,7 @@ class SiteTests(TestCase):
     def test_all_pages_render(self):
         for url in [
             "/", "/lid-worden/", "/evenementen/", "/evenementen/wacaca/", "/evenementen/nonnebossentocht/",
-            "/kalender/", "/klassement/", "/bestuur/", "/clubreglement/", "/cyql/", "/contact/",
+            "/kalender/", "/klassement/", "/bestuur/", "/clubreglement/", "/cyql/", "/contact/", "/downloads/",
         ]:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
@@ -101,6 +101,52 @@ class SiteTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].reply_to, ["jan@example.com"])
         self.assertIn("Mag ik meerijden?", mail.outbox[0].body)
+
+    def test_contact_messages_not_stored(self):
+        from wagtail.contrib.forms.models import FormSubmission
+
+        self.client.post(
+            "/contact/",
+            {"naam": "Jan", "e_mailadres": "jan@example.com", "gsm_nummer": "", "bericht": "Mag ik meerijden?"},
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertFalse(FormSubmission.objects.exists())
+
+    def test_contact_mail_failure_is_shown(self):
+        with mock.patch("django.core.mail.EmailMessage.send", side_effect=OSError("smtp weg")):
+            response = self.client.post(
+                "/contact/",
+                {"naam": "Jan", "e_mailadres": "jan@example.com", "gsm_nummer": "", "bericht": "Hallo"},
+            )
+        self.assertContains(response, "kon niet verstuurd worden")
+
+    def test_admin_has_one_forms_menu(self):
+        admin = get_user_model().objects.create_superuser("beheer", "beheer@example.com", "x" * 14)
+        self.client.force_login(admin)
+        html = self.client.get("/admin/").content.decode()
+        self.assertEqual(html.count('"name": "formulieren"'), 1)
+        self.assertNotIn('"name": "forms"', html)
+
+    def test_downloads_page_before_shop_and_lists_chosen_documents(self):
+        from django.core.files.base import ContentFile
+        from wagtail.documents import get_document_model
+
+        from apps.pages.models import DownloadItem, DownloadsPage
+
+        html = self.client.get("/").content.decode()
+        menu = html[html.index('class="nav-desktop"'):]
+        self.assertLess(menu.index('href="/downloads/"'), menu.index('href="/shop/"'))
+        Document = get_document_model()
+        shown = Document.objects.create(title="Ongevalsaangifte", file=ContentFile(b"%PDF-1.4", name="ongeval.pdf"))
+        Document.objects.create(title="Intern verslag", file=ContentFile(b"%PDF-1.4", name="intern.pdf"))
+        page = DownloadsPage.objects.get()
+        page.downloads.add(DownloadItem(document=shown, description="Binnen 8 dagen bezorgen."))
+        page.save_revision().publish()
+        html = self.client.get("/downloads/").content.decode()
+        self.assertIn("Ongevalsaangifte", html)
+        self.assertIn("Binnen 8 dagen bezorgen.", html)
+        self.assertIn(shown.url, html)
+        self.assertNotIn("Intern verslag", html)
 
     def test_contact_honeypot_drops_spam(self):
         self.client.post(

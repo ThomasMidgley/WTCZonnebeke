@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+{% block content %}
+{% include "includes/page_head.html" %}
+<div class="wrap narrow content">
+  {% if downloads %}
+    <ul class="downloads">
+      {% for item in downloads %}
+        <li>
+          <a href="{{ item.document.url }}">
+            <span class="downloads-title">{{ item.display_title }}</span>
+            <span class="meta">{{ item.document.file_extension|upper }}{% if item.document.file_size %} · {{ item.document.file_size|filesizeformat }}{% endif %}</span>
+          </a>
+          {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Er staan nog geen documenten klaar.</p>
+  {% endif %}
+  {% include_block page.body %}
+</div>
+{% endblock %}

@@ -77,6 +77,17 @@ def answers_view(request, pk):
     )
 
 
+def answers_clear(request, pk):
+    """Alle antwoorden van een formulier wissen, zodat het formulier opnieuw gebruikt kan worden."""
+    form_obj = get_object_or_404(Form, pk=pk)
+    count = form_obj.submissions.count()
+    if request.method == "POST":
+        form_obj.submissions.all().delete()
+        messages.success(request, f"{count} antwoord{'' if count == 1 else 'en'} gewist.")
+        return redirect("formulier_antwoorden", pk=form_obj.pk)
+    return render(request, "formulieren/admin_clear.html", {"form_obj": form_obj, "count": count})
+
+
 def answers_export(request, pk):
     form_obj = get_object_or_404(Form, pk=pk)
     header, rows = services.submissions_table(form_obj)

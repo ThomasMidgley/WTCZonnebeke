@@ -26,6 +26,7 @@ from apps.pages.models import (
     ContactPage,
     ContentPage,
     CyqlPage,
+    DownloadsPage,
     EventIndexPage,
     EventPage,
     HomePage,
@@ -132,6 +133,7 @@ class Command(BaseCommand):
             "Bancontact, kaart, Apple Pay of Google Pay. Kledij haal je af bij de verantwoordelijke clubkledij; "
             "je krijgt een mail zodra ze klaarligt.",
         )
+        pages["downloads"] = self.downloads(home, pages["shop"])
         seed_shop()
         seed_membership()
         pages["contact"] = self.contact(home)
@@ -331,6 +333,18 @@ class Command(BaseCommand):
                  "aanmelding goed.</li></ol>"),
             ),
         )
+
+    def downloads(self, home, shop):
+        page = DownloadsPage.objects.first()
+        if page:
+            return page
+        page = self.publish(home, DownloadsPage(
+            title="Downloads", slug="downloads", show_in_menus=True,
+            intro="Formulieren en documenten voor leden, zoals de ongevalsaangifte.",
+        ))
+        # In het menu net voor de webshop.
+        page.move(shop, pos="left")
+        return DownloadsPage.objects.get(pk=page.pk)
 
     def contact(self, home):
         page = ContactPage.objects.first()

@@ -173,6 +173,15 @@ p, ul, ol { margin: 0 0 1em; }
 .callout > :last-child { margin-bottom: 0; }
 .callout h2 { font-size: 1.15rem; }
 figure { margin: 1.5rem 0; }
+
+/* Downloads */
+.downloads { list-style: none; padding: 0; margin: 1.5rem 0; }
+.downloads li { border-bottom: 1px solid var(--line); padding: 0.9rem 0; }
+.downloads li:first-child { border-top: 1px solid var(--line); }
+.downloads a { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; text-decoration: none; min-height: 44px; align-items: center; }
+.downloads-title { font-weight: 600; text-decoration: underline; text-underline-offset: 0.15em; }
+.downloads .meta { color: var(--muted); font-size: 0.95rem; }
+.downloads p { margin: 0.25rem 0 0; color: var(--muted); }
 figure img { border-radius: var(--radius); display: block; }
 figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.25rem; margin: 0 0 1.5rem; }

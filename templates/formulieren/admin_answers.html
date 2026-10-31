@@ -6,6 +6,7 @@
     <p>
       <a class="button" href="{% url 'formulier_export' form_obj.pk %}">Exporteer naar Excel</a>
       <a class="button button-secondary" href="{{ form_obj.get_absolute_url }}" target="_blank" rel="noopener">Formulier openen</a>
+      {% if table %}<a class="button button-secondary no" href="{% url 'formulier_wissen' form_obj.pk %}">Alle antwoorden wissen</a>{% endif %}
     </p>
     <p>{{ table|length }} antwoord{{ table|length|pluralize:"en" }}. Link om te delen: <code>{{ request.scheme }}://{{ request.get_host }}{{ form_obj.get_absolute_url }}</code></p>
     {% if table %}
