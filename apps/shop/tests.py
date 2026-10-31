@@ -227,3 +227,10 @@ class EuroFilterTests(TestCase):
     def test_euro(self):
         template = Template("{% load wtc %}{{ a|euro }} {{ b|euro }}")
         self.assertEqual(template.render(Context({"a": Decimal("180.00"), "b": Decimal("1234.5")})), "180 1.234,50")
+
+
+class CspTests(TestCase):
+    def test_checkout_may_redirect_to_stripe(self):
+        # Zonder dit blokkeert de browser de doorverwijzing na het betaalformulier.
+        csp = self.client.get("/winkelmandje/")["Content-Security-Policy"]
+        self.assertIn("form-action 'self' https://checkout.stripe.com", csp)
