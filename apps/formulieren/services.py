@@ -17,7 +17,10 @@ def save_submission(form, answers, email="", order_number="", send_confirmation=
     submission = Submission.objects.create(form=form, answers=answers, email=email, order_number=order_number)
     context = {"form": form, "submission": submission}
     if email and send_confirmation:
-        _send(f"Bevestiging: {form.title}", "formulieren/email/confirmation.txt", context, [email])
+        from apps.core.models import Clubgegevens
+
+        cc = Clubgegevens.load().copy_addresses(exclude=[email])
+        _send(f"Bevestiging: {form.title}", "formulieren/email/confirmation.txt", context, [email], cc=cc)
     notify = form.notify_addresses()
     if notify:
         _send(f"Nieuw antwoord: {form.title}", "formulieren/email/notify.txt", context, notify,
@@ -25,9 +28,9 @@ def save_submission(form, answers, email="", order_number="", send_confirmation=
     return submission
 
 
-def _send(subject, template, context, to, reply_to=None):
+def _send(subject, template, context, to, reply_to=None, cc=None):
     try:
-        EmailMessage(subject, render_to_string(template, context), to=to, reply_to=reply_to).send()
+        EmailMessage(subject, render_to_string(template, context), to=to, cc=cc, reply_to=reply_to).send()
     except Exception:
         logger.exception("Mail '%s' mislukt", subject)
 

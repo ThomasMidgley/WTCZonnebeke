@@ -42,7 +42,7 @@ class Product(ClusterableModel):
     ]
     # Titels van de rubrieken in de shop, in deze volgorde.
     CATEGORIES = [
-        (KIND_ARTICLE, "Artikels"), (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events"), (KIND_MEMBERSHIP, "Lidgeld"),
+        (KIND_MEMBERSHIP, "Lidgeld"), (KIND_ARTICLE, "Artikels"), (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events"),
     ]
 
     title = models.CharField("naam", max_length=120)
