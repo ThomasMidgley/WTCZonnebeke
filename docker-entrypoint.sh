@@ -17,6 +17,9 @@ python manage.py seed_site
   done
 ) &
 
+# Planner voor de nachtelijke Cyql-sync (uur instelbaar bij Instellingen > Integraties).
+python manage.py run_scheduler &
+
 exec gunicorn config.wsgi \
   --bind 0.0.0.0:8000 \
   --workers "${GUNICORN_WORKERS:-2}" \

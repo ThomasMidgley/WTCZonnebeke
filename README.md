@@ -63,7 +63,24 @@ In *Cloudflare Zero Trust* > *Networks* > *Tunnels* > je bestaande tunnel > *Pub
 Optioneel en aangeraden: *Access* > *Applications* > *Self-hosted* voor `www.wtczonnebeke.be/admin`,
 met Microsoft Entra ID als login. Dan ziet niemand buiten de club zelfs het aanmeldscherm.
 
-### 4. Eerste keer aanmelden
+### 4. Cyql
+
+1. In het [Cyql-dashboard](https://dashboard.cyql.app) > *Settings* > *API* > *New API key*. Kopieer de sleutel meteen.
+2. Zet hem in de stack als `CYQL_API_KEY` en klik *Update the stack*.
+3. Elke nacht haalt de site de gegevens op, op het uur bij *Instellingen* > *Integraties*.
+   Het verslag van elke synchronisatie staat bij *Instellingen* > *Cyql-sync*.
+
+Handig in de console van de container (Portainer > container > *Console*):
+
+| Commando | Wat |
+| --- | --- |
+| `python manage.py cyql_sync` | Nu synchroniseren |
+| `python manage.py cyql_schema` | Toont welke gegevens de Cyql-API aanbiedt (zonder sleutel) |
+
+Cyql rekent met een wekelijks budget per club; de site vraagt daarom alles één keer per nacht op
+en toont bezoekers enkel wat in de eigen database staat.
+
+### 5. Eerste keer aanmelden
 
 Ga naar `https://www.wtczonnebeke.be/admin/` en meld je aan met info@wtczonnebeke.be.
 Onder **Instellingen** vind je: Huisstijl, Clubgegevens, Clubreglement, Vzw-statuten, Cyql-app, Integraties, Toegang en QR-info pijltjes.
