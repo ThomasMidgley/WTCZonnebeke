@@ -33,7 +33,7 @@ from apps.pages.models import (
     RulesPage,
 )
 from apps.shop.models import ShopPage
-from apps.shop.seed import seed_shop
+from apps.shop.seed import seed_membership, seed_shop
 
 SEED_DIR = Path(settings.BASE_DIR) / "seed"
 
@@ -127,12 +127,13 @@ class Command(BaseCommand):
         pages["clubreglement"] = self.rules(home)
         pages["cyql"] = self.cyql(home)
         pages["shop"] = self.child(
-            home, ShopPage, "Clubkledij", "shop",
-            intro="Bestel hier je clubkledij van Bioracer. Betalen gaat online met Bancontact, kaart, Apple Pay "
-            "of Google Pay. Je haalt je bestelling af bij de verantwoordelijke clubkledij; je krijgt een mail "
-            "zodra ze klaarligt.",
+            home, ShopPage, "Webshop", "shop",
+            intro="Bestel hier je clubkledij van Bioracer en schrijf je in voor clubevents. Betalen gaat online met "
+            "Bancontact, kaart, Apple Pay of Google Pay. Kledij haal je af bij de verantwoordelijke clubkledij; "
+            "je krijgt een mail zodra ze klaarligt.",
         )
         seed_shop()
+        seed_membership()
         pages["contact"] = self.contact(home)
         self.settings()
         self.sponsors()

@@ -7,6 +7,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 from apps.accounts import views as account_views
 from apps.core import views as core_views
 from apps.cyql import views as cyql_views
+from apps.formulieren import views as formulier_views
 from apps.shop import views as shop_views
 
 urlpatterns = [
@@ -26,6 +27,8 @@ urlpatterns = [
     path("bestelling/<str:token>/", shop_views.order_view, name="shop_order"),
     path("stripe/webhook/", shop_views.stripe_webhook, name="stripe_webhook"),
     path("stock/", include("apps.shop.stock_urls")),
+    path("formulier/<slug:code>/", formulier_views.form_view, name="formulier"),
+    path("formulier/<slug:code>/bedankt/", formulier_views.form_done, name="formulier_klaar"),
 ]
 
 if settings.DEBUG:

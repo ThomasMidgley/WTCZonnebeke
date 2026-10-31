@@ -36,11 +36,17 @@ def checkout_view(request):
     if not lines:
         return redirect("shop_cart")
     members_only = any(line["product"].members_only for line in lines)
-    form = CheckoutForm(request.POST or None, members_only=members_only)
+    has_goods = any(not line["product"].is_event for line in lines)
+    form = CheckoutForm(request.POST or None, members_only=members_only, has_goods=has_goods)
     if request.method == "POST" and form.is_valid():
         if not payments.is_configured():
             messages.error(request, "Online betalen is nog niet ingesteld. Probeer het later opnieuw.")
             return redirect("shop_checkout")
+        for line in lines:
+            left = line["product"].places_left if line["product"].is_event else None
+            if left is not None and line["qty"] > left:
+                messages.error(request, f"{line['product'].title}: er zijn nog maar {left} plaatsen vrij.")
+                return redirect("shop_cart")
         data = form.cleaned_data
         order = services.create_order(lines, data["name"], data["email"], data["phone"], data["note"])
         order_url = request.build_absolute_uri(reverse("shop_order", args=[order.token]))

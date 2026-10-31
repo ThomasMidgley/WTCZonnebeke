@@ -1,31 +1,46 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags wagtailimages_tags wtc %}
+{% load static wagtailcore_tags wagtailimages_tags wtc %}
 {% block title %}{{ product.title }}{% endblock %}
 {% block content %}
 <div class="wrap content product">
-  <p class="back"><a href="{% pageurl page %}">← Terug naar de shop</a></p>
+  <p class="back"><a href="{% pageurl page %}">← Terug naar de webshop</a></p>
   <div class="product-grid">
     <div>{% if product.image %}{% image product.image width-800 format-webp alt=product.title %}{% endif %}</div>
     <div>
       <h1>{{ product.title }}</h1>
-      <div class="price">€ {{ product.price|euro }}</div>
+      <div class="price">€ {{ product.current_price|euro }}</div>
+      {% if product.is_event and product.price_after is not None and product.price_after_date %}
+        <p class="meta">{% if product.current_price == product.price_after %}Prijs sinds {{ product.price_after_date|date:"j F" }}.{% else %}Vanaf {{ product.price_after_date|date:"j F" }}: € {{ product.price_after|euro }}.{% endif %}</p>
+      {% endif %}
       {% if product.description %}<p>{{ product.description|linebreaksbr }}</p>{% endif %}
       {% if product.is_package %}
         <p>Het pakket bestaat uit:</p>
         <ul>{% for c in product.components.all %}<li>{{ c.component.title }}</li>{% endfor %}</ul>
       {% endif %}
       {% if product.members_only %}<p class="meta">Enkel voor leden: we kijken je e-mailadres na in de ledenlijst.</p>{% endif %}
-      <form class="form" method="post" novalidate>
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        {% for field in form.variant_fields %}
-          <p>{{ field.errors }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</p>
-        {% endfor %}
-        <p>{{ form.qty.errors }}<label for="{{ form.qty.id_for_label }}">{{ form.qty.label }}</label>{{ form.qty }}</p>
-        <button class="button" type="submit">In mijn mandje</button>
-      </form>
-      <p class="meta">{{ page.preorder_text }}</p>
+      {% if product.is_event and product.is_closed %}
+        <div class="callout"><p>De inschrijvingen zijn afgesloten.</p></div>
+      {% elif product.is_event and product.is_full %}
+        <div class="callout"><p>Volzet. Er zijn geen plaatsen meer vrij.</p></div>
+      {% else %}
+        <form class="form" method="post" novalidate data-jumps>
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          {% for field in form.variant_fields %}
+            <p>{{ field.errors }}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</p>
+          {% endfor %}
+          {% include "formulieren/_questions.html" %}
+          {% if form.qty.is_hidden %}{{ form.qty }}{% else %}
+            <p>{{ form.qty.errors }}<label for="{{ form.qty.id_for_label }}">{{ form.qty.label }}</label>{{ form.qty }}</p>
+          {% endif %}
+          {% if product.places_left is not None %}<p class="meta">Nog {{ product.places_left }} plaats{{ product.places_left|pluralize:"en" }} vrij.</p>{% endif %}
+          <button class="button" type="submit">{% if product.is_event %}Inschrijven{% else %}In mijn mandje{% endif %}</button>
+        </form>
+      {% endif %}
+      {% if not product.is_event %}<p class="meta">{{ page.preorder_text }}</p>{% endif %}
+      {% if product.is_event and product.closes_at %}<p class="meta">Inschrijven kan tot {{ product.closes_at|date:"j F Y \o\m H.i" }} uur.</p>{% endif %}
     </div>
   </div>
 </div>
+<script src="{% static 'js/formulier.js' %}" defer></script>
 {% endblock %}

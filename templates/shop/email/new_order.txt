@@ -1,4 +1,4 @@
-{% load wtc %}Nieuwe betaalde bestelling {{ order.number }}
+{% load wtc %}{% autoescape off %}Nieuwe betaalde bestelling {{ order.number }}
 
 {{ order.name }} · {{ order.email }} · {{ order.phone }}
 {% for line in lines %}- {{ line.quantity }} × {{ line.title }}{% if line.size %} ({{ line.size }}){% endif %}{% if line.is_preorder %} [VOORBESTELLING]{% endif %}
@@ -7,3 +7,4 @@
 Opmerking: {{ order.note }}
 {% endif %}
 Te leveren: {{ base_url }}/stock/bestelling/{{ order.pk }}/
+{% endautoescape %}

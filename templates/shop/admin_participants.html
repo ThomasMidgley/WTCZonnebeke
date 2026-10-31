@@ -1,0 +1,17 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Deelnemers: {{ product.title }}{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Deelnemers" subtitle=product.title icon="group" %}
+  <div class="nice-padding">
+    <p><a class="button" href="?export=1">Exporteer naar Excel</a></p>
+    <p>{{ total }} deelnemer{{ total|pluralize:"s" }}{% if product.max_places %} van de {{ product.max_places }} plaatsen{% endif %}. Enkel betaalde inschrijvingen.</p>
+    {% if rows %}
+      <div style="overflow-x:auto">
+        <table class="listing">
+          <thead><tr>{% for h in header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
