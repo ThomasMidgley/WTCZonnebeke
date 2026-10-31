@@ -50,15 +50,15 @@ Neem dat volume mee in de back-up van de Pi. (Kopie naar OneDrive volgt in een l
 
 ### 3. Cloudflare Tunnel
 
+De website zit in hetzelfde Docker-netwerk als je cloudflared-container (standaard `tunnel`;
+een andere naam stel je in met `TUNNEL_NETWORK`). Er staat geen poort open op de Pi.
+
 In *Cloudflare Zero Trust* > *Networks* > *Tunnels* > je bestaande tunnel > *Public hostnames*, voeg toe:
 
 | Subdomain | Domain | Service |
 | --- | --- | --- |
-| `www` | `wtczonnebeke.be` | `http://<ip-van-de-pi>:8001` |
-| (leeg) | `wtczonnebeke.be` | `http://<ip-van-de-pi>:8001` |
-
-Draait cloudflared zelf in Docker op dezelfde Pi, dan kan `http://<ip-van-de-pi>:8001` gewoon blijven.
-Zet poort 8001 **niet** open in je router.
+| `www` | `wtczonnebeke.be` | `http://wtc-website:8000` |
+| (leeg) | `wtczonnebeke.be` | `http://wtc-website:8000` |
 
 Optioneel en aangeraden: *Access* > *Applications* > *Self-hosted* voor `www.wtczonnebeke.be/admin`,
 met Microsoft Entra ID als login. Dan ziet niemand buiten de club zelfs het aanmeldscherm.
