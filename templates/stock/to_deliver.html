@@ -1,0 +1,8 @@
+{% extends "stock/base.html" %}
+{% block title %}Te leveren{% endblock %}
+{% block heading %}Te leveren{% endblock %}
+{% block content %}
+<ul class="cards">
+  {% for order in orders %}{% include "stock/_order_card.html" %}{% empty %}<li class="empty">Niets te leveren.</li>{% endfor %}
+</ul>
+{% endblock %}

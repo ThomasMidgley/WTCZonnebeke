@@ -1,0 +1,34 @@
+{% extends "stock/base.html" %}
+{% load wtc %}
+{% block title %}Bestelling {{ order.number }}{% endblock %}
+{% block heading %}{{ order.name }}{% endblock %}
+{% block content %}
+<p class="meta">Bestelling {{ order.number }} · {{ order.get_status_display }}</p>
+<p class="contact">
+  {% if order.phone %}<a class="big" href="tel:{{ order.phone }}">Bel {{ order.phone }}</a>{% endif %}
+  <a class="big secondary" href="mailto:{{ order.email }}">Mail</a>
+</p>
+<ul class="lines">
+  {% for line in order.lines.all %}
+    <li><strong>{{ line.quantity }}×</strong> {{ line.title }}{% if line.size %} <strong>{{ line.size }}</strong>{% endif %}{% if line.is_preorder %} <span class="badge">voorbestelling</span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% if order.note %}<p class="note">“{{ order.note }}”</p>{% endif %}
+<p class="meta">Betaald: € {{ order.total|euro }}{% if order.paid_at %} op {{ order.paid_at|date:"j F Y" }}{% endif %}{% if order.ready_at %} · klaar gemeld op {{ order.ready_at|date:"j F Y" }}{% endif %}</p>
+
+{% if order.status == "betaald" %}
+  <form method="post" action="{% url 'stock:order_action' order.pk 'klaar' %}">{% csrf_token %}
+    <button class="big secondary" type="submit">Ligt klaar: stuur mail</button>
+  </form>
+{% endif %}
+{% if order.status == "betaald" or order.status == "klaar" %}
+  <form method="post" action="{% url 'stock:order_action' order.pk 'geleverd' %}" data-confirm="Alles overhandigd?">{% csrf_token %}
+    <button class="big" type="submit">Geleverd</button>
+  </form>
+{% endif %}
+{% if order.can_mark_not_collected %}
+  <form method="post" action="{% url 'stock:order_action' order.pk 'niet-afgehaald' %}">{% csrf_token %}
+    <button class="big danger" type="submit">Niet afgehaald: terug in voorraad</button>
+  </form>
+{% endif %}
+{% endblock %}

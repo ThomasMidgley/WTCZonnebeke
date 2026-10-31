@@ -1,0 +1,28 @@
+{% load static %}<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#231f20">
+  <title>{% block title %}Stock{% endblock %} · WTC Zonnebeke</title>
+  <link rel="manifest" href="{% url 'stock:manifest' %}">
+  <link rel="icon" href="{% static 'img/icon.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="stylesheet" href="{% static 'css/stock.css' %}">
+  <script src="{% static 'js/stock.js' %}" defer></script>
+</head>
+<body>
+  <header><h1>{% block heading %}Stock{% endblock %}</h1></header>
+  <main>
+    {% if messages %}<ul class="messages">{% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}</ul>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <nav class="tabs" aria-label="Stockmenu">
+    <a href="{% url 'stock:to_deliver' %}"{% if tab == "leveren" %} aria-current="page"{% endif %}>Te leveren</a>
+    <a href="{% url 'stock:stock' %}"{% if tab == "stock" %} aria-current="page"{% endif %}>Stock</a>
+    <a href="{% url 'stock:search' %}"{% if tab == "zoeken" %} aria-current="page"{% endif %}>Zoeken</a>
+    <a href="{% url 'stock:log' %}"{% if tab == "logboek" %} aria-current="page"{% endif %}>Logboek</a>
+  </nav>
+</body>
+</html>

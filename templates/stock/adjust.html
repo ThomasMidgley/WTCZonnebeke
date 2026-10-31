@@ -1,0 +1,24 @@
+{% extends "stock/base.html" %}
+{% block title %}{{ variant }}{% endblock %}
+{% block heading %}{{ variant.product.title }}{% endblock %}
+{% block content %}
+<p class="size-big">{{ variant.label }}</p>
+<p class="meta">In de kast: <strong>{{ variant.stock }}</strong> · gereserveerd: {{ variant.reserved }} · vrij: {{ variant.available }}</p>
+<form method="post" class="adjust" novalidate>
+  {% csrf_token %}
+  {{ form.delta.errors }}
+  <label for="id_delta">{{ form.delta.label }}</label>
+  <div class="stepper">
+    <button type="button" class="big secondary" data-step="-1" aria-label="Eén minder">−</button>
+    <input id="id_delta" name="delta" type="number" inputmode="numeric" value="{{ form.delta.value|default:'0' }}">
+    <button type="button" class="big secondary" data-step="1" aria-label="Eén meer">+</button>
+  </div>
+  {{ form.reason.errors }}<label for="id_reason">{{ form.reason.label }}</label>{{ form.reason }}
+  {{ form.detail.errors }}<label for="id_detail">{{ form.detail.label }}</label>{{ form.detail }}
+  <button class="big" type="submit">Bewaar</button>
+</form>
+{% if movements %}
+  <h2>Laatste wijzigingen</h2>
+  <ul class="log">{% for m in movements %}<li><strong>{{ m.delta|stringformat:"+d" }}</strong> {{ m.reason }}<span class="meta">{{ m.created_at|date:"j/m H.i" }}{% if m.user %} · {{ m.user.first_name|default:m.user.username }}{% endif %}</span></li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

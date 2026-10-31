@@ -1,0 +1,19 @@
+{% extends "stock/base.html" %}
+{% block title %}Stock{% endblock %}
+{% block heading %}Stock{% endblock %}
+{% block content %}
+<p class="meta">Kast · gereserveerd · <strong>vrij</strong>. Tik op een maat om bij te tellen of af te trekken.</p>
+{% for product in products %}
+  <section class="product">
+    <h2>{{ product.title }}</h2>
+    <ul class="variants">
+      {% for v in product.variants.all %}{% if v.is_active %}
+        <li><a href="{% url 'stock:adjust' v.pk %}">
+          <span class="size">{{ v.label }}</span>
+          <span class="nums">{{ v.stock }} · {{ v.reserved }} · <strong{% if v.available < 0 %} class="neg"{% endif %}>{{ v.available }}</strong></span>
+        </a></li>
+      {% endif %}{% endfor %}
+    </ul>
+  </section>
+{% endfor %}
+{% endblock %}

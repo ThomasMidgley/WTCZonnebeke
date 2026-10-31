@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load wtc %}
+{% block title %}Bestelling {{ order.number }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="wrap"><h1>Bestelling {{ order.number }}</h1></div></div>
+<div class="wrap narrow content">
+  {% if order.status == "afrekenen" %}
+    <div class="callout"><p>{% if just_paid %}Bedankt! We wachten nog op de bevestiging van je betaling. Ververs de pagina binnen enkele ogenblikken.{% else %}Deze bestelling is nog niet betaald.{% endif %}</p></div>
+  {% elif order.status == "betaald" %}
+    <div class="callout"><p><strong>Bedankt, je betaling is gelukt.</strong> Je krijgt een bevestiging per mail. We laten je weten wanneer je bestelling klaarligt.</p></div>
+  {% else %}
+    <p>Status: <strong>{{ order.get_status_display }}</strong></p>
+  {% endif %}
+  <ul class="summary">
+    {% for line in order.lines.all %}<li><span>{{ line.quantity }} × {{ line.title }}{% if line.size %} ({{ line.size }}){% endif %}{% if line.is_preorder %} · voorbestelling{% endif %}</span><span>{% if line.unit_price %}€ {{ line.line_total|euro }}{% endif %}</span></li>{% endfor %}
+    <li class="sum"><span>Totaal</span><span>€ {{ order.total|euro }}</span></li>
+  </ul>
+</div>
+{% endblock %}

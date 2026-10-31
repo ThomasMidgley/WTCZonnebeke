@@ -9,9 +9,9 @@ Openbare website van wielertoeristenclub WTC Zonnebeke vzw, met een beheeromgevi
 
 ## Fasering
 
-1. Basis en inhoud: pagina's, huisstijl, sponsors, clubreglement, QR-infopagina, contactformulier, SSO, Docker. **(deze versie)**
+1. Basis en inhoud: pagina's, huisstijl, sponsors, clubreglement, QR-infopagina, contactformulier, SSO, Docker.
 2. Cyql: clubkalender, klassement, ledenlijst voor lidcontrole.
-3. Webshop en stockbeheer met Stripe, mobiele stockomgeving (PWA).
+3. Webshop en stockbeheer met Stripe, mobiele stockomgeving (PWA). **(deze versie)**
 4. Formulierenbouwer en inschrijvingen.
 5. Livegang op wtc-zonnebeke.be.
 
@@ -92,7 +92,26 @@ Eén sync kost ongeveer 300 (met één getoond klassement). De site vraagt daaro
 enkel wat in de eigen database staat. Op het klassement staan standaard enkel voornaam en initiaal;
 volledige namen zet je aan op de pagina Klassement.
 
-### 5. Eerste keer aanmelden
+### 5. Stripe (webshop)
+
+1. In het [Stripe-dashboard](https://dashboard.stripe.com): zet bij *Instellingen > Betaalmethodes* Bancontact, kaarten,
+   Apple Pay en Google Pay aan. Zet bij *Instellingen > Openbare gegevens* de afschriftomschrijving op `WTC ZONNEBEKE`.
+   De vzw is niet btw-plichtig: geen btw instellen.
+2. *Ontwikkelaars > Webhooks > Eindpunt toevoegen*: URL `https://<jouw domein>/stripe/webhook/` met de events
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`
+   en `checkout.session.expired`.
+3. Zet de geheime sleutel (`sk_...`) in `STRIPE_SECRET_KEY` en het ondertekeningsgeheim van de webhook (`whsec_...`)
+   in `STRIPE_WEBHOOK_SECRET`, als variabelen van de stack in Portainer. Nooit in Git of in de admin.
+   Test eerst met de testsleutels (`sk_test_...`) en testkaart 4242 4242 4242 4242.
+
+Stock: *in de kast* daalt pas bij **Geleverd**. Wie afrekent, houdt de maten 30 minuten vast; een betaalde bestelling
+blijft gereserveerd tot ze geleverd is. Niet betaald of verlopen: de reservatie vervalt vanzelf. Vier weken na de mail
+"ligt klaar" kan de stockbeheerder een bestelling op *niet afgehaald* zetten. Elke wijziging komt in het logboek.
+
+De stockbeheerder (rol in *Instellingen > Toegang*) opent `/stock/` op de gsm en kiest *Toevoegen aan startscherm*.
+De sessie blijft 30 dagen geldig.
+
+### 6. Eerste keer aanmelden
 
 Ga naar `https://www.wtczonnebeke.be/admin/` en meld je aan met info@wtczonnebeke.be.
 Onder **Instellingen** vind je: Huisstijl, Clubgegevens, Clubreglement, Vzw-statuten, Integraties, Toegang en QR-info pijltjes.

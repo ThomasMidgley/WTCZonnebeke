@@ -1,0 +1,8 @@
+<li class="card">
+  <a href="{% url 'stock:order' order.pk %}">
+    <strong>{{ order.name }}</strong>
+    <span class="meta">{{ order.number }} · {{ order.get_status_display }}{% if order.paid_at %} · {{ order.paid_at|date:"j/m" }}{% endif %}</span>
+    <span>{% for line in order.lines.all %}{{ line.quantity }}× {{ line.title }}{% if line.size %} {{ line.size }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+    {% if order.has_preorder %}<span class="badge">Voorbestelling</span>{% endif %}
+  </a>
+</li>

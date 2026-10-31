@@ -222,6 +222,10 @@ class Toegang(BaseGenericSetting):
     class Meta:
         verbose_name = "toegang"
 
+    def stock_addresses(self):
+        """Wie mails over nieuwe bestellingen krijgt: de stockbeheerders."""
+        return parse_emails(self.stock_emails)
+
     def role_for(self, email):
         email = (email or "").strip().lower()
         admins = parse_emails(self.admin_emails) | {e.lower() for e in settings.BOOTSTRAP_ADMIN_EMAILS}

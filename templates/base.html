@@ -25,6 +25,7 @@
           {% for item in menu %}<li><a href="{% pageurl item %}"{% if item|is_current:page %} aria-current="page"{% endif %}>{{ item.title }}</a></li>{% endfor %}
         </ul>
       </nav>
+      {% if cart_count %}<a class="cart-link" href="{% url 'shop_cart' %}">Mandje <span>{{ cart_count }}</span></a>{% endif %}
       <details class="nav-mobile">
         <summary>Menu</summary>
         <nav aria-label="Hoofdmenu (mobiel)">
@@ -36,6 +37,7 @@
     </div>
   </header>
   <main id="inhoud">
+    {% if messages %}<div class="wrap narrow"><ul class="messages">{% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}</ul></div>{% endif %}
     {% block content %}{% endblock %}
   </main>
   {% include "includes/footer.html" %}

@@ -39,9 +39,11 @@ INSTALLED_APPS = [
     "apps.pages",
     "apps.accounts",
     "apps.cyql",
+    "apps.shop",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.contrib.settings",
+    "wagtail.contrib.routable_page",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -163,6 +165,7 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 WAGTAIL_SITE_NAME = "WTC Zonnebeke"
 WAGTAILADMIN_BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
 WAGTAILADMIN_LOGIN_URL = "accounts:login"
+LOGIN_URL = "accounts:login"  # ook voor de stock-app op /stock/
 WAGTAIL_PASSWORD_MANAGEMENT_ENABLED = False
 WAGTAIL_PASSWORD_RESET_ENABLED = False
 WAGTAILUSERS_PASSWORD_ENABLED = False
@@ -192,6 +195,10 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "info@wtczonnebeke.be"
 # Cyql: de sleutel bepaalt de club en komt enkel uit de omgeving.
 CYQL_API_KEY = os.environ.get("CYQL_API_KEY", "").strip()
 CYQL_API_URL = os.environ.get("CYQL_API_URL", "https://api.cyql.app/api/graphql")
+
+# Stripe (webshop). Testsleutels beginnen met sk_test_.
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
 
 BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", DATA_DIR / "backups"))
 BACKUP_KEEP_DAYS = int(os.environ.get("BACKUP_KEEP_DAYS", "30"))
