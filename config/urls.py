@@ -18,7 +18,6 @@ urlpatterns = [
     path("index.php", core_views.legacy_index, name="legacy_index"),
     path("robots.txt", core_views.robots_txt, name="robots_txt"),
     path("manifest.webmanifest", core_views.manifest, name="manifest"),
-    path("gezond/", core_views.health, name="health"),
 ]
 
 if settings.DEBUG:

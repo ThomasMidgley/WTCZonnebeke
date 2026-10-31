@@ -45,6 +45,3 @@ def manifest(request):
         content_type="application/manifest+json",
     )
 
-
-def health(request):
-    return HttpResponse("ok", content_type="text/plain")

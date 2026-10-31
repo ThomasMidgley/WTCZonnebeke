@@ -94,6 +94,12 @@ class SiteTests(TestCase):
         huisstijl.save()
         self.assertIn("--primary:#003366", self.client.get("/").content.decode())
 
+    @override_settings(ALLOWED_HOSTS=["www.wtczonnebeke.be"])
+    def test_health_works_on_internal_address(self):
+        response = self.client.get("/gezond/", HTTP_HOST="127.0.0.1:8000")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get("/", HTTP_HOST="127.0.0.1:8000").status_code, 400)
+
     def test_admin_requires_login(self):
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 302)
