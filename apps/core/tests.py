@@ -47,6 +47,16 @@ class SiteTests(TestCase):
         self.assertContains(response, "<figcaption>Op de fiets</figcaption>")
         self.assertContains(response, 'loading="lazy"')
 
+    def test_empty_photo_block_in_preview(self):
+        # Een nieuw fotoblok zonder gekozen foto gaf een fout 500 in het voorbeeld van de beheeromgeving.
+        from django.template.loader import render_to_string
+
+        from apps.pages.blocks import ImageBlock
+
+        block = ImageBlock()
+        html = render_to_string("blocks/image.html", {"value": block.to_python({"image": None, "caption": ""})})
+        self.assertNotIn("<figure>", html)
+
     def test_home_shows_main_sponsors_and_footer(self):
         html = self.client.get("/").content.decode()
         for name in ["Fietstechniek Gheysen", "De Oude Timmerie", "Garage Ghesquiere", "Deneut Sanitair"]:
