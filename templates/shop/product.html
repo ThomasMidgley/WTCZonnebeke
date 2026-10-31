@@ -8,7 +8,7 @@
     <div>{% if product.image %}{% image product.image width-800 format-webp alt=product.title %}{% endif %}</div>
     <div>
       <h1>{{ product.title }}</h1>
-      <p class="price">€ {{ product.price|euro }}</p>
+      <div class="price">€ {{ product.price|euro }}</div>
       {% if product.description %}<p>{{ product.description|linebreaksbr }}</p>{% endif %}
       {% if product.is_package %}
         <p>Het pakket bestaat uit:</p>
