@@ -1,19 +1,13 @@
-{% load wtc %}{% autoescape off %}Beste {{ order.name }},
-
-Bedankt voor je bestelling bij WTC Zonnebeke. Je betaling is goed ontvangen.
-
-Bestelling {{ order.number }}
+{% load wtc mails %}{% autoescape off %}Bestelling {{ order.number }}
 {% for line in lines %}- {{ line.quantity }} × {{ line.title }}{% if line.size %} ({{ line.size }}){% endif %}{% if line.is_preorder %} [voorbestelling]{% endif %}{% if line.unit_price %}: € {{ line.line_total|euro }}{% endif %}
-{% for label, value in line.answers %}    {{ label }}: {{ value|default:"-" }}
+{% for label, value in line.answers %}    {{ label }}: {{ value|mask_national_number|default:"-" }}
 {% endfor %}{% endfor %}
 Totaal: € {{ order.total|euro }}
-
+{% for text in extra_texts %}
+{{ text }}
+{% endfor %}
 {% if order.has_preorder %}Een deel van je bestelling is een voorbestelling. We groeperen de bestellingen bij Bioracer; reken op enkele weken levertijd.
 {% endif %}{% if order.has_goods %}Je haalt je bestelling af bij de kledijverantwoordelijke na een clubrit of na afspraak. We sturen je een mail zodra ze klaarligt.
 {% else %}Je inschrijving is in orde. Deze mail is je bewijs van betaling.
 {% endif %}
-Je bestelling bekijken: {{ base_url }}/bestelling/{{ order.token }}/
-
-Sportieve groeten,
-WTC Zonnebeke
-{% endautoescape %}
+Je bestelling bekijken: {{ base_url }}/bestelling/{{ order.token }}/{% endautoescape %}

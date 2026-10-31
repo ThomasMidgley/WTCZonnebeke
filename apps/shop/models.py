@@ -73,6 +73,10 @@ class Product(ClusterableModel):
         "formulieren.Form", verbose_name="extra vragen", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", help_text="Een formulier uit het menu Formulieren. De vragen komen bij de inschrijving.",
     )
+    confirmation_text = models.TextField(
+        "extra tekst in de bevestiging", blank=True,
+        help_text="Komt in de bevestigingsmail van wie dit kocht, bv. het uur en de zaal van het clubfeest.",
+    )
     requires_main = models.BooleanField(
         "enkel samen met een 1e aansluiting", default=False,
         help_text="Enkel voor lidgeld, bv. 2e aansluiting of gezinsaansluiting: kan enkel als er ook een "
@@ -91,6 +95,7 @@ class Product(ClusterableModel):
                 FieldRowPanel([FieldPanel("max_places"), FieldPanel("closes_at")]),
                 FieldRowPanel([FieldPanel("price_after"), FieldPanel("price_after_date")]),
                 FieldPanel("form"),
+                FieldPanel("confirmation_text"),
                 FieldPanel("requires_main"),
             ],
             heading="Enkel voor events en lidgeld",

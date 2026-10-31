@@ -1,0 +1,2 @@
+{% autoescape off %}{% for line in lines %}- {{ line.quantity }} × {{ line.title }}{% if line.size %} ({{ line.size }}){% endif %}
+{% endfor %}{% endautoescape %}

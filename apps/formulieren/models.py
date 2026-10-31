@@ -41,6 +41,10 @@ class Form(ClusterableModel):
     one_per_email = models.BooleanField(
         "één antwoord per e-mailadres", default=False, help_text="Werkt als het formulier een vraag van het type e-mail heeft."
     )
+    send_confirmation = models.BooleanField(
+        "bevestiging sturen", default=True,
+        help_text="De invuller krijgt een mail met de bedankt-tekst en de antwoorden (als er een vraag van het type e-mail is).",
+    )
     notify_emails = models.TextField(
         "meldingen naar", blank=True, help_text="Eén e-mailadres per lijn. Krijgt elk nieuw antwoord in de mailbox."
     )
@@ -53,7 +57,7 @@ class Form(ClusterableModel):
     panels = [
         MultiFieldPanel([FieldPanel("title"), FieldPanel("code"), FieldPanel("intro"), FieldPanel("thanks")], heading="Formulier"),
         MultiFieldPanel(
-            [FieldRowPanel([FieldPanel("is_active"), FieldPanel("closes_at")]), FieldPanel("one_per_email"), FieldPanel("notify_emails"),
+            [FieldRowPanel([FieldPanel("is_active"), FieldPanel("closes_at")]), FieldPanel("one_per_email"), FieldPanel("send_confirmation"), FieldPanel("notify_emails"),
              FieldPanel("admin_checks")],
             heading="Instellingen",
         ),

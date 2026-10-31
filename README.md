@@ -129,7 +129,16 @@ De sessie blijft 30 dagen geldig.
 - Optioneel: captcha met Cloudflare Turnstile via `TURNSTILE_SITE_KEY` en `TURNSTILE_SECRET_KEY` in de stack.
   Zonder die sleutels houdt een onzichtbare valstrik de meeste spambots tegen.
 
-### 7. Eerste keer aanmelden
+### 7. E-mails
+
+Alle automatische mails staan in het menu **E-mails** (enkel beheerders): wanneer ze vertrekken, naar wie, en of er
+een kopie naar de club gaat. Onderwerp, tekst boven en tekst onder pas je daar aan, met invulvelden zoals `{naam}`
+en `{bestelnummer}`; het middenstuk (bestelling, antwoorden, links) vult de website zelf in. Met *Voorbeeld bekijken*
+en *Testmail naar mij* controleer je een wijziging voor je ze opslaat. Het kopie-adres staat bij Instellingen >
+Clubgegevens. *Verstuurde mails* toont de laatste 90 dagen, met *Opnieuw versturen* bij een mislukte mail.
+Rijksregisternummers komen nooit voluit in een mail. Welke mails er bestaan, staat in `apps/mails/registry.py`.
+
+### 8. Eerste keer aanmelden
 
 Ga naar `https://www.wtczonnebeke.be/admin/` en meld je aan met info@wtczonnebeke.be.
 Onder **Instellingen** vind je: Huisstijl, Clubgegevens, Clubreglement, Vzw-statuten, Integraties, Toegang en QR-info pijltjes.
