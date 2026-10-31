@@ -45,7 +45,8 @@ class SecurityHeadersMiddleware:
             "style-src 'self' 'unsafe-inline'",
             "script-src 'self'",
             "frame-src https://www.youtube-nocookie.com",
-            "form-action 'self'",
+            # Na het afrekenen sturen we de browser door naar de betaalpagina van Stripe.
+            "form-action 'self' https://checkout.stripe.com",
             "base-uri 'self'",
             "frame-ancestors 'self'",
         ]
