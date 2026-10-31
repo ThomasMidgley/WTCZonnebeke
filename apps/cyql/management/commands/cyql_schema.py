@@ -9,22 +9,36 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.cyql.client import CyqlClient, CyqlError
 
-TYPE_REF = "kind name ofType { kind name ofType { kind name ofType { kind name } } }"
 TYPES_QUERY = "{ __schema { queryType { name } types { name kind } } }"
-TYPE_QUERY = (
-    "query($name: String!) { __type(name: $name) { name kind description "
-    f"fields {{ name description args {{ name type {{ {TYPE_REF} }} }} type {{ {TYPE_REF} }} }} "
-    f"inputFields {{ name type {{ {TYPE_REF} }} }} enumValues {{ name }} }} }}"
-)
+
+
+def type_ref(levels):
+    """Selectie voor een type, met `levels` keer ofType (voor lijsten en verplichte velden)."""
+    return "kind name" + (f" ofType {{ {type_ref(levels - 1)} }}" if levels > 0 else "")
+
+
+def type_query(levels, with_args):
+    ref = type_ref(levels)
+    args = f" args {{ name type {{ {ref} }} }}" if with_args else ""
+    return (
+        "query($name: String!) { __type(name: $name) { name kind description "
+        f"fields {{ name{args} type {{ {ref} }} }} "
+        f"inputFields {{ name type {{ {ref} }} }} enumValues {{ name }} }} }}"
+    )
+
+
+# Van volledig naar minimaal: Cyql begrenst de diepte van een vraag.
+VARIANTS = [(levels, True) for levels in (3, 2, 1, 0)] + [(levels, False) for levels in (3, 2, 1, 0)]
 
 
 def type_name(ref):
+    # Ontbreekt ofType (te weinig diepte toegelaten), dan tonen we "…".
     if ref is None:
-        return "?"
+        return "…"
     if ref["kind"] == "NON_NULL":
-        return type_name(ref["ofType"]) + "!"
+        return type_name(ref.get("ofType")) + "!"
     if ref["kind"] == "LIST":
-        return f"[{type_name(ref['ofType'])}]"
+        return f"[{type_name(ref.get('ofType'))}]"
     return ref["name"]
 
 
@@ -60,10 +74,29 @@ class Command(BaseCommand):
             # Querytype eerst, daarna alfabetisch.
             query_type = schema["queryType"]["name"]
             names.sort(key=lambda n: (n != query_type, n))
+            query = None
             for name in names:
-                t = client.query(TYPE_QUERY, {"name": name})["__type"]
+                if query is None:
+                    query, t = self.find_query(client, name)
+                else:
+                    t = client.query(query, {"name": name})["__type"]
                 self.stdout.write(render_type(t) + "\n")
         except CyqlError as exc:
             raise CommandError(f"Cyql gaf een fout: {exc.code}: {exc}") from exc
         if client.remaining is not None:
             self.stdout.write(f"# Resterend weekbudget van de club: {client.remaining}")
+
+    def find_query(self, client, name):
+        """Zoekt de meest volledige vraag die Cyql nog toelaat."""
+        for levels, with_args in VARIANTS:
+            query = type_query(levels, with_args)
+            try:
+                result = client.query(query, {"name": name})["__type"]
+            except CyqlError as exc:
+                if exc.code == "ExceedingMaxDepth":
+                    continue
+                raise
+            note = "" if with_args else ", zonder argumenten"
+            self.stdout.write(f"# Diepte: {levels} niveaus{note}\n")
+            return query, result
+        raise CyqlError("Zelfs de kleinste vraag is te diep", code="ExceedingMaxDepth")
