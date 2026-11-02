@@ -105,7 +105,8 @@ def membership_compare(request, pk):
     )
 
 
-IMPORT_HEADER = ["Voornaam", "Naam", "E-mail"]
+# Zelfde opbouw als het voorbeeldbestand van Cyql (invite-example.csv): puntkomma, deze volgorde.
+IMPORT_HEADER = ["email", "firstname", "lastname"]
 
 
 def membership_import_csv(request, pk):
@@ -113,10 +114,10 @@ def membership_import_csv(request, pk):
     form_obj = get_object_or_404(Form, pk=pk)
     _, only_list, _ = herinschrijving.compare(form_obj)
     buffer = io.StringIO()
-    writer = csv.writer(buffer)
+    writer = csv.writer(buffer, delimiter=";", lineterminator="\n")
     writer.writerow(IMPORT_HEADER)
     for person in only_list:
-        writer.writerow([person.first_name, person.last_name, person.email])
+        writer.writerow([person.email, person.first_name, person.last_name])
     response = HttpResponse(buffer.getvalue(), content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="import-cyql.csv"'
     return response

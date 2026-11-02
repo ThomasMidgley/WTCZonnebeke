@@ -188,7 +188,7 @@ class MembershipCompareTests(TestCase):
         self.assertContains(page, "Jef Vandamme")
         self.assertContains(page, "Piet Desmet")
         csv_response = self.client.get(f"/admin/formulieren/{self.form.pk}/cyql/import-cyql.csv")
-        self.assertEqual(csv_response.content.decode().splitlines(), ["Voornaam,Naam,E-mail", "Jef,Vandamme,jef@example.com"])
+        self.assertEqual(csv_response.content.decode().splitlines(), ["email;firstname;lastname", "jef@example.com;Jef;Vandamme"])
         xlsx = self.client.get(f"/admin/formulieren/{self.form.pk}/cyql/inactieve-leden.xlsx")
         sheet = load_workbook(BytesIO(xlsx.content)).active
         self.assertEqual([c.value for c in sheet[2]], ["Piet", "Desmet", "piet@example.com"])
