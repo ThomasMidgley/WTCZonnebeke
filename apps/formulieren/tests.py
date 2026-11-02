@@ -151,3 +151,48 @@ class NationalNumberTests(TestCase):
         self.assertEqual(normalize_national_number("12031212313"), "12.03.12-123.13")  # geboren na 2000
         self.assertIsNone(normalize_national_number("85073003329"))
         self.assertIsNone(normalize_national_number("8507300332"))
+
+
+class MembershipCompareTests(TestCase):
+    def setUp(self):
+        import uuid
+
+        from apps.cyql.models import Member
+        from apps.shop.models import Product
+
+        self.form = Form.objects.create(title="Lidgeld")
+        Product.objects.create(slug="lidgeld", title="1e aansluiting", kind=Product.KIND_MEMBERSHIP, price=65,
+                               form=self.form)
+        for first, last, email in [("An", "Peeters", "an@example.com"), ("Jef", "Vandamme", "jef@example.com")]:
+            Submission.objects.create(form=self.form, email=email,
+                                      answers=[["Naam", last], ["Voornaam", first], ["E-mailadres", email]])
+        # Zelfde persoon twee keer ingeschreven telt één keer.
+        Submission.objects.create(form=self.form, email="jef@example.com",
+                                  answers=[["Naam", "Vandamme"], ["Voornaam", "Jef"], ["E-mailadres", "jef@example.com"]])
+        for first, last, email in [("Ann", "Peeters", "an@example.com"), ("Piet", "Desmet", "piet@example.com")]:
+            Member.objects.create(cyql_id=uuid.uuid4(), first_name=first, last_name=last, email=email, status="APPROVED")
+        admin = get_user_model().objects.create_superuser("beheer", "beheer@example.com", "x" * 14)
+        self.client.force_login(admin)
+
+    def test_three_scenarios(self):
+        from apps.formulieren.herinschrijving import compare
+
+        both, only_list, only_cyql = compare(self.form)
+        self.assertEqual([p.full_name for p, _ in both], ["An Peeters"])  # gevonden via e-mailadres
+        self.assertEqual([p.full_name for p in only_list], ["Jef Vandamme"])
+        self.assertEqual([m.full_name for m in only_cyql], ["Piet Desmet"])
+
+    def test_page_and_exports(self):
+        self.assertContains(self.client.get(f"/admin/formulieren/{self.form.pk}/antwoorden/"), "Vergelijken met Cyql")
+        page = self.client.get(f"/admin/formulieren/{self.form.pk}/cyql/")
+        self.assertContains(page, "Jef Vandamme")
+        self.assertContains(page, "Piet Desmet")
+        csv_response = self.client.get(f"/admin/formulieren/{self.form.pk}/cyql/import-cyql.csv")
+        self.assertEqual(csv_response.content.decode().splitlines(), ["Voornaam,Naam,E-mail", "Jef,Vandamme,jef@example.com"])
+        xlsx = self.client.get(f"/admin/formulieren/{self.form.pk}/cyql/inactieve-leden.xlsx")
+        sheet = load_workbook(BytesIO(xlsx.content)).active
+        self.assertEqual([c.value for c in sheet[2]], ["Piet", "Desmet", "piet@example.com"])
+
+    def test_other_forms_have_no_compare_button(self):
+        other = make_form()
+        self.assertNotContains(self.client.get(f"/admin/formulieren/{other.pk}/antwoorden/"), "Vergelijken met Cyql")

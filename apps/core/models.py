@@ -1,8 +1,9 @@
 import datetime
+import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from wagtail.admin.panels import FieldPanel, HelpPanel, MultiFieldPanel
 from wagtail.contrib.settings.models import BaseGenericSetting, register_setting
@@ -10,6 +11,20 @@ from wagtail.contrib.settings.models import BaseGenericSetting, register_setting
 from . import colors
 
 hex_validator = RegexValidator(colors.HEX_RE, "Gebruik een HEX-kleurcode zoals #FF5200.")
+
+
+SVG_UNSAFE = re.compile(r"<script|javascript:|\son[a-z]+\s*=|<foreignobject|<iframe|<embed|<object")
+
+
+def validate_logo(file):
+    """Een SVG-logo mag geen scripts bevatten."""
+    if not file.name.lower().endswith(".svg"):
+        return
+    file.seek(0)
+    content = file.read().decode("utf-8", "ignore").lower()
+    file.seek(0)
+    if SVG_UNSAFE.search(content):
+        raise ValidationError("Dit SVG-bestand bevat scripts. Exporteer het logo opnieuw als gewone SVG of als PNG.")
 
 
 def parse_emails(text):
@@ -23,7 +38,8 @@ class Huisstijl(BaseGenericSetting):
         max_length=7,
         default="#231F20",
         validators=[hex_validator],
-        help_text="Kop- en voettekst, titels. Witte tekst moet erop leesbaar zijn.",
+        help_text="Strook met logo en menu bovenaan, voettekst en titels. De tekstkleur erop (wit of zwart) "
+        "wordt automatisch gekozen.",
     )
     accent_color = models.CharField(
         "accentkleur",
@@ -32,8 +48,16 @@ class Huisstijl(BaseGenericSetting):
         validators=[hex_validator],
         help_text="Knoppen en markeringen. Voor tekstlinks wordt automatisch een leesbare tint berekend.",
     )
+    logo = models.FileField(
+        "logo",
+        upload_to="huisstijl/",
+        blank=True,
+        validators=[FileExtensionValidator(["svg", "png", "webp"]), validate_logo],
+        help_text="SVG of PNG met transparante achtergrond. Het staat bovenaan op de basiskleur, op de website en in "
+        "de stock-app; kies dus een versie die daarop goed leesbaar is. Leeg: het standaardlogo.",
+    )
 
-    panels = [FieldPanel("primary_color"), FieldPanel("accent_color")]
+    panels = [FieldPanel("primary_color"), FieldPanel("accent_color"), FieldPanel("logo")]
 
     class Meta:
         verbose_name = "huisstijl"
@@ -41,11 +65,6 @@ class Huisstijl(BaseGenericSetting):
     def clean(self):
         super().clean()
         errors = {}
-        if colors.HEX_RE.match(self.primary_color or "") and colors.contrast(self.primary_color, "#FFFFFF") < 4.5:
-            errors["primary_color"] = (
-                f"Te licht: witte tekst haalt maar {colors.contrast(self.primary_color, '#FFFFFF'):.1f}:1 "
-                "contrast (minimum 4,5:1). Kies een donkerdere kleur."
-            )
         if colors.HEX_RE.match(self.accent_color or ""):
             on_accent = colors.readable_on(self.accent_color)
             if colors.contrast(self.accent_color, on_accent) < 3:
@@ -54,11 +73,26 @@ class Huisstijl(BaseGenericSetting):
             raise ValidationError(errors)
 
     @property
+    def on_primary(self):
+        """Wit als dat leesbaar is op de basiskleur (4,5:1), anders zwart."""
+        return "#FFFFFF" if colors.contrast(self.primary_color, "#FFFFFF") >= 4.5 else "#1A1A1A"
+
+    @property
+    def logo_url(self):
+        if self.logo:
+            return self.logo.url
+        from django.templatetags.static import static
+
+        # Het standaardlogo bestaat in een donkere en een lichte versie.
+        return static("img/logo.svg" if self.on_primary != "#FFFFFF" else "img/logo-light.svg")
+
+    @property
     def css_variables(self):
         accent_text = colors.darken_until(self.accent_color)
         return {
             "--primary": self.primary_color,
-            "--on-primary": "#FFFFFF",
+            "--on-primary": self.on_primary,
+            "--primary-text": colors.darken_until(self.primary_color),
             "--accent": self.accent_color,
             "--on-accent": colors.readable_on(self.accent_color),
             "--accent-text": accent_text,

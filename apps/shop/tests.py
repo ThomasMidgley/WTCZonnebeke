@@ -308,7 +308,7 @@ class EventTests(ShopBase):
             [("1e aansluiting", Decimal("65"), False), ("2e aansluiting", Decimal("65"), True),
              ("Gratis gezinsaansluiting", Decimal("0"), True)],
         )
-        self.assertEqual(self.lidgeld.form.check_labels(), ["Geregistreerd bij VWB", "Betaald aan VWB"])
+        self.assertEqual(self.lidgeld.form.check_labels(), ["Betaald aan VWB"])
 
     def test_national_number_is_checked(self):
         response = self.client.post("/shop/lidgeld/", self.member_data(national="80050112300"))
@@ -369,11 +369,12 @@ class EventTests(ShopBase):
         self.client.force_login(admin)
         url = f"/admin/formulieren/{self.lidgeld.form.pk}/antwoorden/"
         response = self.client.get(url)
-        self.assertContains(response, "Geregistreerd bij VWB")
+        self.assertContains(response, "Betaald aan VWB")
+        self.assertNotContains(response, "Geregistreerd bij VWB")
         self.assertContains(response, f'name="check-{submission.pk}-0"')
         self.client.post(url, {f"check-{submission.pk}-0": "on"})
         submission.refresh_from_db()
-        self.assertEqual(submission.checks, {"Geregistreerd bij VWB": True, "Betaald aan VWB": False})
+        self.assertEqual(submission.checks, {"Betaald aan VWB": True})
         export = self.client.get(f"/admin/formulieren/{self.lidgeld.form.pk}/export/")
         self.assertEqual(export.status_code, 200)
 

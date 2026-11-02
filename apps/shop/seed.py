@@ -89,7 +89,7 @@ MEMBERSHIP_QUESTIONS = [
     ("Telefoon", "gsm", True, ""),
     ("E-mailadres", "email", True, ""),
 ]
-MEMBERSHIP_CHECKS = "Geregistreerd bij VWB\nBetaald aan VWB"
+MEMBERSHIP_CHECKS = "Betaald aan VWB"
 
 # slug, naam, prijs, prijs na 1 december, enkel samen met een 1e aansluiting, beschrijving
 MEMBERSHIPS = [

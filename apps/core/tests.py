@@ -1,6 +1,7 @@
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
@@ -171,6 +172,18 @@ class SiteTests(TestCase):
         huisstijl.save()
         self.assertIn("--primary:#003366", self.client.get("/").content.decode())
 
+    def test_uploaded_logo_on_site_and_stock_app(self):
+        from django.core.files.base import ContentFile
+
+        huisstijl = Huisstijl.load()
+        huisstijl.logo.save("nieuw-logo.png", ContentFile(b"png"), save=True)
+        self.assertIn(huisstijl.logo.url, self.client.get("/").content.decode())
+        manager = get_user_model().objects.create_user("stock", "stock@example.com")
+        manager.groups.add(Group.objects.get_or_create(name=STOCK_GROUP)[0])
+        self.client.force_login(manager)
+        html = self.client.get("/stock/").content.decode()
+        self.assertIn(f'class="logo" src="{huisstijl.logo.url}"', html)
+
     @override_settings(ALLOWED_HOSTS=["www.wtczonnebeke.be"])
     def test_health_works_on_internal_address(self):
         response = self.client.get("/gezond/", HTTP_HOST="127.0.0.1:8000")
@@ -188,10 +201,27 @@ class ColorTests(TestCase):
         self.assertAlmostEqual(colors.contrast("#FFFFFF", "#000000"), 21, places=0)
         self.assertGreater(colors.contrast(colors.darken_until("#FF5200"), "#FFFFFF"), 4.5)
 
-    def test_light_primary_is_rejected(self):
+    def test_light_primary_gets_black_text(self):
+        # Een lichte basiskleur wordt niet meer geweigerd: de tekst erop wordt zwart.
+        light = Huisstijl(primary_color="#3BA9E0", accent_color="#FF5200")
+        light.clean()
+        self.assertEqual(light.css_variables["--on-primary"], "#1A1A1A")
+        self.assertTrue(light.logo_url.endswith("img/logo.svg"))
+        self.assertGreaterEqual(colors.contrast(light.css_variables["--primary-text"], "#FFFFFF"), 4.5)
+        dark = Huisstijl(primary_color="#231F20", accent_color="#FF5200")
+        self.assertEqual(dark.css_variables["--on-primary"], "#FFFFFF")
+        self.assertTrue(dark.logo_url.endswith("img/logo-light.svg"))
+
+    def test_svg_logo_with_script_is_refused(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.core.models import validate_logo
+
         with self.assertRaises(ValidationError):
-            Huisstijl(primary_color="#FFEE00", accent_color="#FF5200").clean()
-        Huisstijl(primary_color="#231F20", accent_color="#FF5200").clean()
+            validate_logo(SimpleUploadedFile("logo.svg", b'<svg onload="alert(1)"></svg>'))
+        with self.assertRaises(ValidationError):
+            validate_logo(SimpleUploadedFile("logo.svg", b"<svg><script>alert(1)</script></svg>"))
+        validate_logo(SimpleUploadedFile("logo.svg", b'<svg viewBox="0 0 10 10"><path d="M0 0"/></svg>'))
 
 
 def fake_msal(claims):

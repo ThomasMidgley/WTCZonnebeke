@@ -53,6 +53,11 @@ def register_answer_urls():
     return [
         path("formulieren/<int:pk>/antwoorden/", superuser_only(views.answers_view), name="formulier_antwoorden"),
         path("formulieren/<int:pk>/wissen/", superuser_only(views.answers_clear), name="formulier_wissen"),
+        path("formulieren/<int:pk>/cyql/", superuser_only(views.membership_compare), name="formulier_cyql"),
+        path("formulieren/<int:pk>/cyql/import-cyql.csv", superuser_only(views.membership_import_csv),
+             name="formulier_cyql_import"),
+        path("formulieren/<int:pk>/cyql/inactieve-leden.xlsx", superuser_only(views.membership_inactive_export),
+             name="formulier_cyql_inactief"),
         path("formulieren/<int:pk>/export/", superuser_only(views.answers_export), name="formulier_export"),
     ]
 

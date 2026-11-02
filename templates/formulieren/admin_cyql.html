@@ -1,0 +1,42 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Vergelijken met Cyql: {{ form_obj.title }}{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Vergelijken met Cyql" subtitle=form_obj.title icon="group" %}
+  <div class="nice-padding">
+    <p>
+      De leden in Cyql zijn van de laatste synchronisatie{% if last_sync %} ({{ last_sync.started_at|date:"j F Y H:i" }}){% endif %}.
+      Pas je net iets aan in Cyql, kies dan eerst <a href="{% url 'cyql_sync_now' %}">Cyql &gt; Nu synchroniseren</a>.
+      Een lid telt als gevonden bij dezelfde voor- en familienaam, of anders bij hetzelfde e-mailadres.
+    </p>
+
+    <h2>In de lijst, nog geen lid in Cyql ({{ only_list|length }})</h2>
+    <p>Zij melden zich normaal zelf aan in Cyql. Gebeurt dat niet, importeer ze dan in Cyql met dit bestand.</p>
+    {% if only_list %}
+      <p><a class="button" href="{% url 'formulier_cyql_import' form_obj.pk %}">Download "Import Cyql" (csv)</a></p>
+      <table class="listing"><thead><tr><th>Naam</th><th>E-mail</th></tr></thead><tbody>
+        {% for person in only_list %}<tr><td>{{ person.full_name }}</td><td>{{ person.email }}</td></tr>{% endfor %}
+      </tbody></table>
+    {% else %}<p>Niemand.</p>{% endif %}
+
+    <h2>In Cyql, niet heringeschreven ({{ only_cyql|length }})</h2>
+    <p>Cyql laat niet toe om leden via de koppeling uit te schakelen of te verwijderen. Zet ze manueel inactief of verwijder ze in Cyql.</p>
+    {% if only_cyql %}
+      <p><a class="button" href="{% url 'formulier_cyql_inactief' form_obj.pk %}">Download "Inactieve leden" (Excel)</a></p>
+      <table class="listing"><thead><tr><th>Naam</th><th>E-mail</th></tr></thead><tbody>
+        {% for member in only_cyql %}<tr><td>{{ member.full_name }}</td><td>{{ member.email }}</td></tr>{% endfor %}
+      </tbody></table>
+    {% else %}<p>Niemand.</p>{% endif %}
+
+    <h2>In de lijst en in Cyql ({{ both|length }})</h2>
+    <p>Hier moet niets gebeuren.</p>
+    {% if both %}
+      <details><summary>Toon de lijst</summary>
+        <table class="listing"><thead><tr><th>Naam in de lijst</th><th>Naam in Cyql</th></tr></thead><tbody>
+          {% for person, member in both %}<tr><td>{{ person.full_name }}</td><td>{{ member.full_name }}</td></tr>{% endfor %}
+        </tbody></table>
+      </details>
+    {% endif %}
+
+    <p><a class="button button-secondary" href="{% url 'formulier_antwoorden' form_obj.pk %}">Terug naar de antwoorden</a></p>
+  </div>
+{% endblock %}
