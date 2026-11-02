@@ -18,7 +18,7 @@
   <a class="skip" href="#inhoud">Naar de inhoud</a>
   <header class="site-header">
     <div class="wrap">
-      <a class="logo" href="/" aria-label="WTC Zonnebeke, naar de home"><img src="{% static 'img/logo.svg' %}" alt="wtc-zonnebeke.be, cycling - mtb team" width="208" height="41"></a>
+      <a class="logo" href="/" aria-label="WTC Zonnebeke, naar de home">{% with huisstijl=settings.core.Huisstijl %}<img src="{{ huisstijl.logo_url }}" alt="wtc-zonnebeke.be, cycling - mtb team"{% if not huisstijl.logo %} width="208" height="41"{% endif %}>{% endwith %}</a>
       {% main_menu as menu %}
       <nav class="nav-desktop" aria-label="Hoofdmenu">
         <ul>

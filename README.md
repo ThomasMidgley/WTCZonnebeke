@@ -6,6 +6,7 @@ Openbare website van wielertoeristenclub WTC Zonnebeke vzw, met een beheeromgevi
 - **Hosting:** één Docker-container (app + database) op een Raspberry Pi met Portainer, achter een Cloudflare Tunnel.
 - **Aanmelden beheer:** Microsoft 365 (Entra ID). Rollen *Beheerder* en *Stockbeheerder* stel je in via Instellingen > Toegang.
 - **Geen cookiebanner nodig:** enkel strikt noodzakelijke cookies, geen tracking, YouTube laadt pas na een klik.
+- **Handleidingen:** [handleiding beheer](docs/handleiding-beheer.md) en [technische referentie](docs/technische-referentie.md). Werk ze bij bij elke wijziging die beheer of installatie raakt.
 
 ## Fasering
 

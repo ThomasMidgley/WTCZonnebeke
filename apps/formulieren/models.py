@@ -50,7 +50,7 @@ class Form(ClusterableModel):
     )
     admin_checks = models.TextField(
         "afvinken door de beheerder", blank=True,
-        help_text="Eén vakje per lijn, bv. Geregistreerd bij VWB. Je vinkt ze per antwoord af in de lijst met antwoorden.",
+        help_text="Eén vakje per lijn, bv. Betaald aan VWB. Je vinkt ze per antwoord af in de lijst met antwoorden.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -92,6 +92,13 @@ class Form(ClusterableModel):
 
     def check_labels(self):
         return [line.strip() for line in self.admin_checks.splitlines() if line.strip()]
+
+    @property
+    def is_membership_form(self):
+        """Het formulier van het lidgeld: daarbij hoort de vergelijking met Cyql."""
+        from apps.shop.models import Product
+
+        return Product.objects.filter(kind=Product.KIND_MEMBERSHIP, form=self).exists()
 
 
 class Question(Orderable):

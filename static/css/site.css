@@ -2,6 +2,7 @@
    Kleuren komen uit de huisstijl-instellingen (CSS-variabelen in base.html). */
 
 :root {
+  --primary-text: #231f20;
   --primary: #231f20;
   --on-primary: #fff;
   --accent: #ff5200;
@@ -38,7 +39,7 @@ main { flex: 1; }
 img, svg { max-width: 100%; height: auto; }
 a { color: var(--accent-text); text-underline-offset: 0.15em; }
 a:hover { text-decoration-thickness: 2px; }
-h1, h2, h3 { line-height: 1.2; color: var(--primary); margin: 1.6em 0 0.5em; }
+h1, h2, h3 { line-height: 1.2; color: var(--primary-text); margin: 1.6em 0 0.5em; }
 h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); margin-top: 0; }
 h2 { font-size: clamp(1.4rem, 3.5vw, 1.9rem); }
 h3 { font-size: 1.2rem; }
@@ -51,10 +52,10 @@ p, ul, ol { margin: 0 0 1em; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 /* Kop */
-.site-header { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 5; }
+.site-header { background: var(--primary); color: var(--on-primary); position: sticky; top: 0; z-index: 5; }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4rem; }
 .logo { display: block; width: 11rem; flex-shrink: 0; }
-.logo img { display: block; }
+.logo img { display: block; width: 100%; height: auto; max-height: 3.25rem; object-fit: contain; object-position: left center; }
 
 .nav-desktop { display: none; }
 .nav-mobile summary {
@@ -62,32 +63,33 @@ p, ul, ol { margin: 0 0 1em; }
   cursor: pointer;
   font-weight: 600;
   padding: 0.5rem 0.9rem;
-  border: 2px solid var(--primary);
+  border: 2px solid currentColor;
   border-radius: 999px;
 }
 .nav-mobile summary::-webkit-details-marker { display: none; }
 .site-header ul { list-style: none; margin: 0; padding: 0; }
-.site-header nav a { display: block; color: var(--primary); text-decoration: none; font-weight: 600; padding: 0.7rem 0; }
-.site-header nav a[aria-current="page"] { color: var(--accent-text); }
+.site-header nav a { display: block; color: var(--on-primary); text-decoration: none; font-weight: 600; padding: 0.7rem 0; }
+.site-header nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 3px; text-underline-offset: 0.35em; }
 .nav-mobile[open] nav {
   position: absolute;
   left: 0;
   right: 0;
   top: 100%;
-  background: #fff;
-  border-bottom: 1px solid var(--line);
+  background: var(--primary);
+  border-top: 1px solid color-mix(in srgb, var(--on-primary) 20%, transparent);
   padding: 0.5rem 1rem 1rem;
   box-shadow: 0 12px 24px rgb(0 0 0 / 0.08);
 }
-.nav-mobile li + li { border-top: 1px solid var(--line); }
+.nav-mobile li + li { border-top: 1px solid color-mix(in srgb, var(--on-primary) 20%, transparent); }
 
-@media (min-width: 72rem) {
+@media (min-width: 80rem) {
   .logo { width: 13rem; }
   .nav-mobile { display: none; }
   .nav-desktop { display: block; }
-  .nav-desktop ul { display: flex; gap: 1.1rem; font-size: 0.98rem; }
+  .nav-desktop ul { display: flex; gap: 1rem; font-size: 0.95rem; }
+  .nav-desktop a { white-space: nowrap; }
   .nav-desktop a { padding: 0.25rem 0; border-bottom: 3px solid transparent; }
-  .nav-desktop a[aria-current="page"] { color: var(--primary); border-color: var(--accent); }
+  .nav-desktop a[aria-current="page"] { color: var(--on-primary); border-color: var(--accent); text-decoration: none; }
 }
 
 /* Knoppen */
@@ -154,7 +156,7 @@ p, ul, ol { margin: 0 0 1em; }
   border-radius: var(--radius);
   background: #fff;
   text-decoration: none;
-  color: var(--primary);
+  color: var(--primary-text);
   font-weight: 700;
   text-align: center;
 }
