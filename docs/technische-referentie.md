@@ -233,6 +233,15 @@ Eenmalig instellen:
 5. Beheeromgeving > **Cyql** > *Instellingen* > *Ledengroep*: het adres van de groep, en bij *Enkel deze adressen (test)* eerst 2 of 3 eigen adressen. *Nu synchroniseren*, het verslag nakijken en een testmail sturen naar de groep vanuit Outlook.
 6. Komt de testmail aan, maak het testveld leeg. De volgende sync zet alle leden in de groep.
 
+Testen zonder Cyql-budget, in de console van de container (Portainer > container > *Console* > `/bin/sh`):
+
+```
+python manage.py ledengroep              # controle: rechten in het token, groep, wat er zou gebeuren; wijzigt niets
+python manage.py ledengroep --uitvoeren  # de groep echt bijwerken met de ledenlijst die al in de database staat
+```
+
+De controle toont welke rechten Microsoft echt aan de app geeft. Staat een recht in Entra maar niet in het token, dan is het meestal als *Delegated* in plaats van *Application* toegevoegd, of ontbreekt de admin consent nog.
+
 Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent dat een recht of de admin consent ontbreekt; het verslag zegt bij welke stap (groep opzoeken, groepsleden lezen, gast aanmaken, toevoegen). Leden van wie de app het adres niet kan lezen, worden nooit uit de groep gehaald. GroupMember.ReadWrite.All geldt technisch voor alle groepen van de tenant; Microsoft laat geen beperking tot één groep toe. De website raakt enkel de ingestelde groep aan, en daarin enkel gasten.
 
 ### Wie mag binnen

@@ -451,3 +451,24 @@ class MemberGroupTests(TestCase):
         with mock.patch("apps.cyql.sync.sync_member_group") as group:
             run_sync(client)
         group.assert_not_called()
+
+
+class MemberGroupCommandTests(TestCase):
+    def test_check_shows_roles_and_changes_nothing(self):
+        import base64
+        import json
+
+        settings = CyqlApp.load()
+        settings.member_group = "leden@club.test"
+        settings.member_group_test = "nieuw@example.com"
+        settings.save()
+        claims = base64.urlsafe_b64encode(json.dumps({"roles": ["User.Invite.All"], "tid": "t1"}).encode()).decode()
+        graph = FakeGraph([guest("oud@example.com")])
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch("apps.cyql.member_group.graph_token", return_value=f"x.{claims.rstrip('=')}.y"), \
+             mock.patch("apps.cyql.management.commands.ledengroep.Graph", return_value=graph):
+            call_command("ledengroep", stdout=out, stderr=err)
+        self.assertIn("Rechten in het token: User.Invite.All", out.getvalue())
+        self.assertIn("Ontbreekt in het token: GroupMember.Read.All", err.getvalue())
+        self.assertIn("zou toevoegen: nieuw@example.com; zou verwijderen: oud@example.com", out.getvalue())
+        self.assertEqual(graph.calls, [])  # niets gewijzigd
