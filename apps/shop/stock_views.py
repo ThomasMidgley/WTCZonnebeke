@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 from apps.accounts.roles import STOCK_GROUP
 
 from . import services
-from .models import Order, Product, StockMovement, Variant
+from .models import SIZES, Order, Product, StockMovement, Variant
 
 
 def can_manage_stock(user):
@@ -66,8 +66,30 @@ def order_action(request, pk, action):
 
 @stock_required
 def stock_overview(request):
-    products = Product.objects.filter(kind=Product.KIND_ARTICLE).prefetch_related("variants")
+    products = Product.objects.filter(kind=Product.KIND_ARTICLE).select_related("image")
     return render(request, "stock/stock.html", {"products": products, "tab": "stock"})
+
+
+GENDER_ORDER = ["", "H", "D"]
+
+
+def size_table(product):
+    """Maattabel: een rij per maat (XS tot XXXL, dan eventuele andere maten), een kolom per heren/dames/unisex."""
+    variants = [v for v in product.variants.all() if v.is_active]
+    genders = sorted({v.gender for v in variants}, key=GENDER_ORDER.index)
+    sizes = [size for size in SIZES if any(v.size.upper() == size for v in variants)]
+    sizes += [v.size for v in variants if v.size.upper() not in SIZES and v.size not in sizes]
+    cells = {(v.size.upper(), v.gender): v for v in variants}
+    rows = [(size, [cells.get((size.upper(), gender)) for gender in genders]) for size in sizes]
+    columns = [dict(Variant.GENDERS)[gender] if len(genders) > 1 or gender else "Stock" for gender in genders]
+    return columns, rows
+
+
+@stock_required
+def stock_product(request, pk):
+    product = get_object_or_404(Product.objects.prefetch_related("variants"), pk=pk, kind=Product.KIND_ARTICLE)
+    columns, rows = size_table(product)
+    return render(request, "stock/product.html", {"product": product, "columns": columns, "rows": rows, "tab": "stock"})
 
 
 REASONS = [
@@ -101,7 +123,7 @@ def adjust(request, pk):
         reason = data["reason"] + (f": {data['detail']}" if data["detail"] else "")
         services.adjust_stock(variant, data["delta"], reason, request.user)
         messages.success(request, f"{variant}: {data['delta']:+d}, nu {variant.stock} in de kast.")
-        return redirect("stock:stock")
+        return redirect("stock:product", pk=variant.product_id)
     movements = variant.movements.select_related("user")[:10]
     return render(request, "stock/adjust.html", {"variant": variant, "form": form, "movements": movements, "tab": "stock"})
 

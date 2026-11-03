@@ -53,6 +53,13 @@ class Product(ClusterableModel):
         "wagtailimages.Image", verbose_name="foto", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     price = models.DecimalField("prijs (€)", max_digits=7, decimal_places=2)
+    article_number = models.CharField(
+        "artikelnummer", max_length=30, blank=True, help_text="Eén nummer voor alle maten van dit artikel."
+    )
+    article_number_ladies = models.CharField(
+        "artikelnummer dames", max_length=30, blank=True,
+        help_text="Enkel invullen als de damesmaten een ander nummer hebben (bv. 41361 D).",
+    )
     members_only = models.BooleanField(
         "enkel voor leden", default=True, help_text="Controle op het e-mailadres in de ledenlijst van Cyql."
     )
@@ -85,7 +92,11 @@ class Product(ClusterableModel):
 
     panels = [
         MultiFieldPanel(
-            [FieldPanel("title"), FieldPanel("slug"), FieldPanel("kind"), FieldPanel("price"), FieldPanel("image")],
+            [
+                FieldPanel("title"), FieldPanel("slug"), FieldPanel("kind"), FieldPanel("price"),
+                FieldRowPanel([FieldPanel("article_number"), FieldPanel("article_number_ladies")]),
+                FieldPanel("image"),
+            ],
             heading="Artikel",
         ),
         FieldPanel("description"),
@@ -175,6 +186,16 @@ class Product(ClusterableModel):
     def visible_variants(self):
         return [v for v in self.variants.all() if v.is_active]
 
+    def number_for(self, gender):
+        if gender == "D" and self.article_number_ladies:
+            return self.article_number_ladies
+        return self.article_number
+
+    @property
+    def article_numbers(self):
+        """Voor overzichten: "41361" of "41361 · 41361 D"."""
+        return " · ".join(n for n in [self.article_number, self.article_number_ladies] if n)
+
 
 class Variant(Orderable):
     GENDERS = [("", "Unisex"), ("H", "Heren"), ("D", "Dames")]
@@ -182,12 +203,11 @@ class Variant(Orderable):
     product = ParentalKey(Product, on_delete=models.CASCADE, related_name="variants")
     gender = models.CharField("heren/dames", max_length=1, choices=GENDERS, blank=True)
     size = models.CharField("maat", max_length=10)
-    article_number = models.CharField("artikelnummer", max_length=30, blank=True)
     stock = models.IntegerField("in de kast", default=0, help_text="Wijzig je dit hier, dan komt dat niet in het logboek.")
     is_active = models.BooleanField("te koop", default=True)
 
     panels = [
-        FieldRowPanel([FieldPanel("gender"), FieldPanel("size"), FieldPanel("article_number")]),
+        FieldRowPanel([FieldPanel("gender"), FieldPanel("size")]),
         FieldRowPanel([FieldPanel("stock"), FieldPanel("is_active")]),
     ]
 
@@ -202,6 +222,10 @@ class Variant(Orderable):
     def label(self):
         gender = dict(self.GENDERS).get(self.gender, "")
         return f"{gender} {self.size}".strip() if self.gender else self.size
+
+    @property
+    def article_number(self):
+        return self.product.number_for(self.gender)
 
     @property
     def reserved(self):

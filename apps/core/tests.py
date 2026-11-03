@@ -48,6 +48,41 @@ class SiteTests(TestCase):
         self.assertContains(response, "<figcaption>Op de fiets</figcaption>")
         self.assertContains(response, 'loading="lazy"')
 
+    def test_cyql_widget_loads_after_click(self):
+        from django.core.exceptions import ValidationError
+
+        from .models import CyqlApp, parse_cyql_widget
+
+        code = (
+            "<script> (function(d,e,i,l,h,v,cr,m){ var f=d.getElementsByTagName('script')[0];"
+            "var j=d.createElement('script'); j.async=true;j.src= 'https://dashboard.cyql.app/widgets/cw.js?e='+e+"
+            "'&i='+i+'&l='+l+'&h='+h+'&v='+v+'&cr='+cr+'&m='+m; f.parentNode.insertBefore(j,f); })"
+            "(document, 'cyql-widget-rides', 'abc-123', 'nl', '506px', 'rides', 'false', 'metric'); </script> "
+            '<div id="cyql-widget-rides"></div>'
+        )
+        self.assertEqual(parse_cyql_widget(code)["i"], "abc-123")
+        for wrong in ["<script>alert(1)</script>", code.replace("'nl'", "'nl\\'+alert(1)+\\''")]:
+            with self.assertRaises(ValidationError):
+                parse_cyql_widget(wrong)
+
+        response = self.client.get("/cyql/")
+        self.assertNotContains(response, "data-cyql-widget")
+        self.assertNotIn("cyql.app", response["Content-Security-Policy"])
+        settings = CyqlApp.load()
+        settings.widget_code = code
+        settings.full_clean()
+        settings.save()
+        response = self.client.get("/cyql/")
+        self.assertContains(response, '<div id="cyql-widget-rides"></div>', html=True)
+        self.assertContains(
+            response,
+            'data-cyql-widget="https://dashboard.cyql.app/widgets/cw.js?e=cyql-widget-rides&amp;i=abc-123&amp;l=nl'
+            '&amp;h=506px&amp;v=rides&amp;cr=false&amp;m=metric"',
+        )
+        self.assertNotContains(response, "<script> (function")
+        self.assertIn("script-src 'self' https://*.cyql.app", response["Content-Security-Policy"])
+        self.assertNotIn("cyql.app", self.client.get("/")["Content-Security-Policy"])
+
     def test_empty_photo_block_in_preview(self):
         # Een nieuw fotoblok zonder gekozen foto gaf een fout 500 in het voorbeeld van de beheeromgeving.
         from django.template.loader import render_to_string

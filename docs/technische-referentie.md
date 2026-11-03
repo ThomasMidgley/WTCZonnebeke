@@ -338,7 +338,11 @@ Een captcha op de openbare formulieren (/formulier/...). Zonder Turnstile houdt 
 3. Zet de **site key** in TURNSTILE\_SITE\_KEY en de **secret key** in TURNSTILE\_SECRET\_KEY, en update de stack.
 4. Test een formulier: onderaan verschijnt het Cloudflare-vakje.
 
-De website past de Content-Security-Policy enkel op formulierpagina's aan zodat challenges.cloudflare.com mag laden; de rest van de site laadt geen externe scripts.
+De website past de Content-Security-Policy enkel op formulierpagina's aan zodat challenges.cloudflare.com mag laden, en op de pagina Cyql-app als er een widgetcode is ingesteld (scripts, frames en verbindingen naar *.cyql.app, afbeeldingen en lettertypes via https). De rest van de site laadt geen externe scripts.
+
+### Cyql-widget
+
+De widgetcode (Cyql > Instellingen) wordt nooit zelf uitgevoerd. De website haalt de zeven waarden uit de code (element, club-ID, taal, hoogte, soort, ...), controleert ze en bouwt zelf het adres `https://dashboard.cyql.app/widgets/cw.js?...` op. Het script laadt pas na een klik op de knop (`static/js/site.js`). Toont de widget niets, kijk dan in de console van de browser naar CSP-meldingen: Cyql laadt misschien iets van een ander domein, dat dan aan `CYQL_WIDGET_CSP` in `apps/pages/models.py` moet worden toegevoegd.
 
 ### YouTube
 

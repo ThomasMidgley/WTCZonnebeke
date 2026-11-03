@@ -8,6 +8,8 @@ from wagtail.contrib.forms.models import AbstractEmailForm, AbstractFormField
 from wagtail.fields import RichTextField, StreamField
 from wagtail.models import Orderable, Page
 
+from apps.core.middleware import SecurityHeadersMiddleware
+
 from .blocks import RICH_FEATURES, BodyBlock
 
 
@@ -187,9 +189,26 @@ class EventPage(BasePage):
         verbose_name = "evenement"
 
 
+CYQL_WIDGET_CSP = (
+    SecurityHeadersMiddleware.PUBLIC_CSP.replace("script-src 'self'", "script-src 'self' https://*.cyql.app")
+    .replace("frame-src ", "frame-src https://*.cyql.app ")
+    .replace("img-src 'self' data:", "img-src 'self' data: https:")
+    + "; connect-src 'self' https://*.cyql.app; font-src 'self' https:"
+)
+
+
 class CyqlPage(BasePage):
     parent_page_types = ["pages.HomePage"]
     max_count = 1
+
+    def serve(self, request, *args, **kwargs):
+        from apps.core.models import CyqlApp
+
+        response = super().serve(request, *args, **kwargs)
+        # De widget van Cyql laadt scripts, kaarten en foto's van Cyql; enkel op deze pagina toegelaten.
+        if CyqlApp.load(request_or_site=request).widget:
+            response["Content-Security-Policy"] = CYQL_WIDGET_CSP
+        return response
 
     class Meta:
         verbose_name = "Cyql-app"
