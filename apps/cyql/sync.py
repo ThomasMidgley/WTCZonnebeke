@@ -10,12 +10,16 @@ Kosten volgens Cyql: 1 per veld, +1 per veld met subvelden, en de velden onder
 """
 
 import logging
+import time
 
 from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from apps.core.models import CyqlApp
+
 from .client import CyqlClient, CyqlError
+from .member_group import sync_member_group
 from .models import Challenge, ChallengeScore, ClubEvent, ClubStats, Member, Ride, SyncRun
 
 logger = logging.getLogger(__name__)
@@ -173,19 +177,30 @@ STEPS = [
 FATAL = ("NoApiKey", "ApiKeyInvalid", "ExceedingApiKeyLimit", "ExceedingComplexityBudget")
 
 
-def run_sync(client=None):
+def run_sync(client=None, group_seconds=None):
+    """`group_seconds` beperkt hoe lang de ledengroep mag duren (in de beheerpagina); 's nachts geen limiet."""
     client = client or CyqlClient()
     run = SyncRun.objects.create()
-    lines, ok = [], True
+    lines, ok, members_ok = [], True, False
     for label, step in STEPS:
         try:
             lines.append(f"{label}: {step(client)}")
+            members_ok = members_ok or label == "leden"
         except CyqlError as exc:
             ok = False
             lines.append(f"{label}: mislukt ({exc.code}: {exc})")
             logger.warning("Cyql-sync %s mislukt: %s %s", label, exc.code, exc)
             if exc.code in FATAL:
                 break
+    if members_ok and CyqlApp.load().member_group:
+        # Enkel met een vers opgehaalde ledenlijst, anders zouden we leden onterecht verwijderen.
+        deadline = time.monotonic() + group_seconds if group_seconds else None
+        try:
+            lines.append(f"ledengroep: {sync_member_group(deadline=deadline)}")
+        except Exception as exc:
+            ok = False
+            lines.append(f"ledengroep: mislukt ({exc})")
+            logger.exception("Ledengroep bijwerken mislukt")
     run.ok = ok
     run.message = "\n".join(lines)
     run.remaining_budget = client.remaining

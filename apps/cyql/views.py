@@ -18,7 +18,8 @@ def sync_now(request):
     if not request.user.is_superuser:
         raise PermissionDenied
     if request.method == "POST":
-        run = run_sync()
+        # Gunicorn stopt een vraag na 60 seconden: wat de groep dan nog moet doen, volgt 's nachts.
+        run = run_sync(group_seconds=30)
         if run.ok:
             messages.success(request, "Cyql is gesynchroniseerd.")
         else:

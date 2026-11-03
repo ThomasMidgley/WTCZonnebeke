@@ -195,15 +195,34 @@ class CyqlApp(BaseGenericSetting):
         "https://web.cyql.app/events/view/&lt;club&gt;/{id}. Leeg: de knop verwijst naar de pagina Cyql-app.",
     )
 
+    member_group = models.EmailField(
+        "adres ledengroep",
+        blank=True,
+        help_text="E-mailadres van de Microsoft 365-groep (bv. leden@wtczonnebeke.be). Na elke nachtelijke sync "
+        "zet de website alle goedgekeurde Cyql-leden als gast in die groep en haalt ze wie niet meer actief is "
+        "eruit. Gebruikers van de tenant in de groep blijven altijd staan. Leeg: de groep wordt niet bijgehouden.",
+    )
+    member_group_test = models.TextField(
+        "enkel deze adressen (test)",
+        blank=True,
+        help_text="Eén e-mailadres per regel. Ingevuld: de groep bevat enkel deze adressen in plaats van alle "
+        "leden. Handig om eerst met een paar adressen te testen; maak leeg om alle leden op te nemen.",
+    )
+
     panels = [
         HelpPanel(content="<p>De API-sleutel staat niet hier maar in Portainer als <code>CYQL_API_KEY</code>.</p>"),
         FieldPanel("sync_time"),
         FieldPanel("invite_link"),
         FieldPanel("event_url"),
+        MultiFieldPanel([FieldPanel("member_group"), FieldPanel("member_group_test")], heading="Ledengroep"),
     ]
 
     class Meta:
         verbose_name = "Cyql-instellingen"
+
+    @property
+    def member_group_test_emails(self):
+        return sorted({line.strip().lower() for line in self.member_group_test.splitlines() if "@" in line})
 
     def event_link(self, cyql_id):
         return self.event_url.replace("{id}", str(cyql_id)) if "{id}" in self.event_url else ""
