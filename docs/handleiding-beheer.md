@@ -108,7 +108,7 @@ Alles wat te koop is, beheer je in **Webshop** > **Artikels**; de soort bepaalt 
 | Soort | Voorbeeld | Bijzonder |
 | --- | --- | --- |
 | Artikel | Trui korte mouw (heren) | Categorie Algemeen, Dames of Heren; één artikelnummer; stock per maat |
-| Pakket | Clubpakket €180 | Bundel van artikelen; de klant kiest per onderdeel een maat |
+| Pakket | Clubpakket heren of dames, €180 | Bundel van artikelen; de klant kiest per onderdeel een maat |
 | Event of inschrijving | Clubfeest, WaCaCa | Geen stock, wel plaatsen, einddatum en extra vragen |
 
 ### Een artikel toevoegen of wijzigen
@@ -124,7 +124,7 @@ De stock wijzig je liefst in de stock-app op de gsm, dan komt de reden in het lo
 
 ### Een pakket
 
-Kies soort *Pakket* en voeg bij **Onderdelen** de artikelen toe. Een pakket heeft zelf geen maten: de stock telt per onderdeel. Kies bij een onderdeel ook *Of in de plaats* (bv. de damesversie van de herentrui): de koper kiest dan een maat uit beide, bv. *Heren M* of *Dames M*.
+Kies soort *Pakket* en voeg bij **Onderdelen** de artikelen toe. Een pakket heeft zelf geen maten: de stock telt per onderdeel. Er is een *Clubpakket heren* met de herenartikels en een *Clubpakket dames* met de damesartikels; algemene artikels zoals kousen staan in beide.
 
 ### Een event of inschrijving
 

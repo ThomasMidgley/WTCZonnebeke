@@ -252,22 +252,8 @@ class PackageComponent(Orderable):
         related_name="+",
         limit_choices_to={"kind": Product.KIND_ARTICLE},
     )
-    alternative = models.ForeignKey(
-        Product,
-        verbose_name="of in de plaats",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="+",
-        limit_choices_to={"kind": Product.KIND_ARTICLE},
-        help_text="Bv. de damesversie van een herenartikel: de koper kiest dan een maat uit beide.",
-    )
 
-    panels = [FieldRowPanel([FieldPanel("component"), FieldPanel("alternative")])]
-
-    @property
-    def choices(self):
-        return [p for p in (self.component, self.alternative) if p]
+    panels = [FieldPanel("component")]
 
     class Meta(Orderable.Meta):
         verbose_name = "onderdeel"

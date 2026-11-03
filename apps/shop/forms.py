@@ -5,14 +5,11 @@ from apps.cyql.models import Member
 from apps.formulieren.forms import QuestionsMixin
 
 
-def variant_choices(products):
-    """Maten om uit te kiezen. Bij keuze tussen bv. heren en dames staat de categorie bij de maat."""
+def variant_choices(product):
     choices = []
-    for product in products:
-        for variant in product.visible_variants():
-            hint = " (voorbestelling)" if variant.available <= 0 else ""
-            label = variant.label if len(products) > 1 else variant.size
-            choices.append((str(variant.pk), f"{label}{hint}"))
+    for variant in product.visible_variants():
+        hint = " (voorbestelling)" if variant.available <= 0 else ""
+        choices.append((str(variant.pk), f"{variant.size}{hint}"))
     return choices
 
 
@@ -34,15 +31,13 @@ class AddToCartForm(QuestionsMixin, forms.Form):
             else:
                 self.fields["qty"].label = "Aantal personen"
         elif product.is_package:
-            self.parts = [
-                (c.component.title, c.choices) for c in product.components.select_related("component", "alternative")
-            ]
+            self.parts = [(c.component.title, c.component) for c in product.components.select_related("component")]
         else:
-            self.parts = [("Maat", [product])]
+            self.parts = [("Maat", product)]
         self.add_questions(product.form.questions.all() if product.is_registration and product.form_id else [])
-        for index, (label, products) in enumerate(self.parts):
+        for index, (label, part) in enumerate(self.parts):
             self.fields[f"variant_{index}"] = forms.ChoiceField(
-                label=label, choices=[("", "Kies je maat")] + variant_choices(products)
+                label=label, choices=[("", "Kies je maat")] + variant_choices(part)
             )
 
     def variant_fields(self):
@@ -64,10 +59,9 @@ class AddToCartForm(QuestionsMixin, forms.Form):
             data["variants"] = []
             return data
         chosen = []
-        for index, (_, products) in enumerate(self.parts):
+        for index, (_, part) in enumerate(self.parts):
             value = data.get(f"variant_{index}")
-            options = [v for product in products for v in product.visible_variants()]
-            variant = next((v for v in options if str(v.pk) == value), None)
+            variant = next((v for v in part.visible_variants() if str(v.pk) == value), None)
             if value and variant is None:
                 self.add_error(f"variant_{index}", "Deze maat is niet meer te koop.")
             chosen.append(variant)

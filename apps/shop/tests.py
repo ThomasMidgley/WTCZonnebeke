@@ -66,7 +66,7 @@ class ShopTests(ShopBase):
     # ------------------------------------------------------------ startinhoud
 
     def test_seed_from_stock_list(self):
-        self.assertEqual(Product.objects.filter(kind=Product.KIND_ARTICLE).count(), 16)  # heren en dames apart
+        self.assertEqual(Product.objects.filter(kind=Product.KIND_ARTICLE).count(), 14)  # heren en dames apart
         self.assertEqual(self.pakket.price, Decimal("180"))
         self.assertEqual(
             [c.component.slug for c in self.pakket.components.all()],
@@ -74,7 +74,7 @@ class ShopTests(ShopBase):
         )
         self.assertEqual(self.trui_m.article_number, "41361")
         call_command("seed_site", verbosity=0)
-        self.assertEqual(Product.objects.count(), 20)  # 16 artikels, pakket, 3 soorten lidgeld
+        self.assertEqual(Product.objects.count(), 19)  # 14 artikels, 2 pakketten, 3 soorten lidgeld
 
     def test_shop_pages(self):
         response = self.client.get("/shop/")
@@ -240,17 +240,22 @@ class ShopTests(ShopBase):
         titles = [c["title"] for c in response.context["categories"]]
         self.assertEqual(titles, ["Lidgeld", "Algemeen", "Dames", "Heren", "Pakketten"])
 
-    def test_package_choice_between_men_and_ladies(self):
-        dames_m = Product.objects.get(slug="trui-korte-mouw-dames").variants.get(size="M")
-        response = self.client.get("/shop/clubpakket/")
-        self.assertContains(response, ">Heren M<")
-        self.assertContains(response, ">Dames M<")
-        parts = [c.component for c in self.pakket.components.all()]
-        variants = [dames_m] + [p.variants.get(size="M") for p in parts[1:]]
-        self.add_to_cart(self.pakket, variants)
+    def test_packages_for_men_and_ladies(self):
+        dames = Product.objects.get(slug="clubpakket-dames")
+        self.assertEqual((self.pakket.title, dames.title), ("Clubpakket heren", "Clubpakket dames"))
+        self.assertEqual(
+            [c.component.slug for c in dames.components.all()],
+            ["trui-korte-mouw-dames", "trui-lange-mouw-dames", "korte-broek-bretellen-dames", "lange-broek-dames",
+             "body-dames", "kousen"],
+        )
+        response = self.client.get("/shop/clubpakket-dames/")
+        self.assertContains(response, ">M<")
+        self.assertNotContains(response, "Heren M")
+        self.add_to_cart(dames, [c.component.variants.get(size="M") for c in dames.components.all()])
         self.checkout()
-        line = Order.objects.get().lines.get(variant=dames_m)
-        self.assertEqual((line.title, line.size), ("Clubpakket: Trui korte mouw", "Dames M"))
+        line = Order.objects.get().lines.get(product__slug="trui-korte-mouw-dames")
+        self.assertEqual((line.title, line.size), ("Clubpakket dames: Trui korte mouw", "Dames M"))
+        self.assertFalse(Product.objects.filter(slug__startswith="thermisch").exists())
 
     def test_stock_app_list_and_size_table(self):
         self.client.force_login(self.stock_user())

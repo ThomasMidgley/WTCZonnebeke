@@ -291,7 +291,7 @@ Terugbetalingen doe je in het Stripe-dashboard bij de betaling (*Terugbetalen*);
 
 ## Webshop: artikelcategorieën (november 2026)
 
-Een artikel heeft een categorie (Algemeen, Dames, Heren) en één artikelnummer; een maat heeft geen heren/dames meer. Migratie `shop/0008` splitste elk artikel met heren- én damesmaten: het bestaande artikel werd het herenartikel, de damesmaten verhuisden naar een nieuw artikel met adres `...-dames`. Stock, logboek en oude bestellingen bleven bij dezelfde maten. In het clubpakket kreeg elk gesplitst onderdeel de damesversie als *Of in de plaats*. Terugdraaien naar een oudere versie gaat niet zonder een back-up van vóór de update.
+Een artikel heeft een categorie (Algemeen, Dames, Heren) en één artikelnummer; een maat heeft geen heren/dames meer. Migratie `shop/0008` splitste elk artikel met heren- én damesmaten: het bestaande artikel werd het herenartikel, de damesmaten verhuisden naar een nieuw artikel met adres `...-dames`. Stock, logboek en oude bestellingen bleven bij dezelfde maten. Een pakket met gesplitste onderdelen werd "... heren" en kreeg een kopie "... dames" (adres `clubpakket-dames`) met de damesartikels. Het thermisch fietsshirt werd verwijderd (fout in de stocklijst; verborgen in plaats van verwijderd als er al bestellingen voor waren). Terugdraaien naar een oudere versie gaat niet zonder een back-up van vóór de update.
 
 ## Cyql
 

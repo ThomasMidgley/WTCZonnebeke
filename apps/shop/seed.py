@@ -28,7 +28,6 @@ ARTICLES = [
     ("body", "Body", "59", {"H": "51972", "D": "57972 D"}, None, ""),
     ("kniebroek", "Kniebroek ¾", "86", {"": "54421"}, None, "Bibshort tot over de knie."),
     ("korte-broek-dames", "Korte broek dames zonder bretellen", "59", {"D": "52158 D"}, None, ""),
-    ("thermisch-fietshirt", "Thermisch fietshirt", "75", {"H": "51472", "D": "51472 D"}, None, "Bioracer Icon Tempest."),
     ("armstukken", "Armstukken", "19", {"": "59350"}, None, "Voor het tussenseizoen."),
     ("kousen", "Kousen", "16", {"": "59107"}, None, ""),
 ]
@@ -68,16 +67,16 @@ def seed_shop():
             for position, size in enumerate(SIZES):
                 Variant.objects.create(product=product, size=size, stock=DUMMY_STOCK[size], sort_order=position)
     slug, title, price, parts = PACKAGE
-    package = Product.objects.create(
-        slug=slug, title=title, kind=Product.KIND_PACKAGE, price=Decimal(price), sort_order=0,
-        description="Het volledige clubpakket: trui korte en lange mouw, korte en lange broek, body en kousen. "
-        "Je kiest de maat per onderdeel, voor heren of dames.",
-    )
-    for position, part in enumerate(parts):
-        main, *other = versions[part]
-        PackageComponent.objects.create(
-            package=package, component=main, alternative=other[0] if other else None, sort_order=position
+    # Een pakket voor heren en een voor dames; onderdelen zonder dames- of herenversie (kousen) staan in beide.
+    for suffix, pick, position in (("heren", 0, 0), ("dames", -1, 1)):
+        package = Product.objects.create(
+            slug=f"{slug}-dames" if suffix == "dames" else slug, title=f"{title} {suffix}",
+            kind=Product.KIND_PACKAGE, price=Decimal(price), sort_order=position,
+            description="Het volledige clubpakket: trui korte en lange mouw, korte en lange broek, body en kousen. "
+            "Je kiest de maat per onderdeel.",
         )
+        for order, part in enumerate(parts):
+            PackageComponent.objects.create(package=package, component=versions[part][pick], sort_order=order)
     return True
 
 
