@@ -350,7 +350,7 @@ class FakeGraph:
         self.members = list(members)
         self.calls = []
 
-    def get_all(self, url, params=None):
+    def get_all(self, url, params=None, action=None):
         if url == "/groups":
             return [{"id": "g1"}]
         return list(self.members)
@@ -399,6 +399,14 @@ class MemberGroupTests(TestCase):
         self.assertIn(("DELETE", "/groups/g1/members/id-weg@example.com/$ref"), graph.calls)
         self.assertNotIn("b1", str(graph.calls))
         self.assertIn("1 toegevoegd, 1 verwijderd", summary)
+
+    def test_member_without_readable_address_is_never_removed(self):
+        from .member_group import sync_member_group
+
+        graph = FakeGraph([{"id": "x1", "userType": "Guest"}, guest("an@example.com")])
+        summary = sync_member_group(graph=graph)
+        self.assertFalse([call for call in graph.calls if call[0] == "DELETE"])
+        self.assertIn("van 1 groepsleden is het adres niet leesbaar", summary)
 
     def test_test_addresses_replace_member_list(self):
         from .member_group import sync_member_group
