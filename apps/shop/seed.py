@@ -48,34 +48,36 @@ def seed_image(filename, title):
         return Image.objects.create(title=title, file=ImageFile(handle, name=filename))
 
 
+CATEGORY = {"": Product.CATEGORY_GENERAL, "H": Product.CATEGORY_MEN, "D": Product.CATEGORY_LADIES}
+
+
 def seed_shop():
-    """Maakt de artikels enkel aan als de shop nog leeg is."""
+    """Maakt de artikels enkel aan als de shop nog leeg is. Heren en dames zijn aparte artikels."""
     if Product.objects.exists():
         return False
+    versions = {}
     for order, (slug, title, price, numbers, photo, description) in enumerate(ARTICLES, start=1):
-        main = numbers.get("H") or numbers.get("") or numbers.get("D", "")
-        ladies = numbers.get("D", "") if numbers.get("D") != main else ""
-        product = Product.objects.create(
-            slug=slug, title=title, price=Decimal(price), description=description,
-            article_number=main, article_number_ladies=ladies,
-            image=seed_image(photo, title) if photo else None, sort_order=order * 10,
-        )
-        position = 0
-        for gender in numbers:
-            for size in SIZES:
-                Variant.objects.create(
-                    product=product, gender=gender, size=size,
-                    stock=DUMMY_STOCK[size], sort_order=position,
-                )
-                position += 1
+        image = seed_image(photo, title) if photo else None
+        for gender, number in numbers.items():
+            product = Product.objects.create(
+                slug=f"{slug}-dames" if gender == "D" and len(numbers) > 1 else slug,
+                title=title, price=Decimal(price), description=description, image=image, sort_order=order * 10,
+                category=CATEGORY[gender], article_number=number,
+            )
+            versions.setdefault(slug, []).append(product)
+            for position, size in enumerate(SIZES):
+                Variant.objects.create(product=product, size=size, stock=DUMMY_STOCK[size], sort_order=position)
     slug, title, price, parts = PACKAGE
     package = Product.objects.create(
         slug=slug, title=title, kind=Product.KIND_PACKAGE, price=Decimal(price), sort_order=0,
         description="Het volledige clubpakket: trui korte en lange mouw, korte en lange broek, body en kousen. "
-        "Je kiest de maat per onderdeel.",
+        "Je kiest de maat per onderdeel, voor heren of dames.",
     )
     for position, part in enumerate(parts):
-        PackageComponent.objects.create(package=package, component=Product.objects.get(slug=part), sort_order=position)
+        main, *other = versions[part]
+        PackageComponent.objects.create(
+            package=package, component=main, alternative=other[0] if other else None, sort_order=position
+        )
     return True
 
 

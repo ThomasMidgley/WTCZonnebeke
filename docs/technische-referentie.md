@@ -289,6 +289,10 @@ Met sk\_test\_: testkaart `4242 4242 4242 4242`, een datum in de toekomst, CVC 1
 
 Terugbetalingen doe je in het Stripe-dashboard bij de betaling (*Terugbetalen*); de website past de status niet vanzelf aan.
 
+## Webshop: artikelcategorieën (november 2026)
+
+Een artikel heeft een categorie (Algemeen, Dames, Heren) en één artikelnummer; een maat heeft geen heren/dames meer. Migratie `shop/0008` splitste elk artikel met heren- én damesmaten: het bestaande artikel werd het herenartikel, de damesmaten verhuisden naar een nieuw artikel met adres `...-dames`. Stock, logboek en oude bestellingen bleven bij dezelfde maten. In het clubpakket kreeg elk gesplitst onderdeel de damesversie als *Of in de plaats*. Terugdraaien naar een oudere versie gaat niet zonder een back-up van vóór de update.
+
 ## Cyql
 
 Cyql is de club-app waarin leden, ritten en klassementen beheerd worden. De website leest Cyql alleen; ze schrijft er nooit naar.

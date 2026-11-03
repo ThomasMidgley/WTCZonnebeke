@@ -1,13 +1,13 @@
 """Stock exporteren naar en importeren uit een csv-bestand.
 
-Eén regel per artikel (en per heren/dames als een artikel beide heeft):
-artikel; artikelnummer; XS; S; M; L; XL; XXL; XXXL.
+Eén regel per artikel: artikel; artikelnummer; XS; S; M; L; XL; XXL; XXXL.
 Een import overschrijft de stock van elke maat op de regel; een lege cel telt als 0.
 Artikels die niet in het bestand staan, blijven ongewijzigd.
 """
 
 import csv
 import io
+from collections import Counter
 from dataclasses import dataclass, field
 
 from django.db import transaction
@@ -16,35 +16,35 @@ from . import services
 from .models import SIZES, Product, Variant
 
 HEADER = ["artikel", "artikelnummer", *SIZES]
-GENDER_SUFFIX = {"H": "heren", "D": "dames"}
+CATEGORY_ORDER = [key for key, _ in Product.ARTICLE_CATEGORIES]
 
 
 @dataclass
 class Group:
-    """Een rij in de csv: de maten van één artikel voor heren, dames of unisex."""
+    """Een rij in de csv: de maten van één artikel."""
 
     product: Product
-    gender: str
     name: str
     variants: dict = field(default_factory=dict)
 
     @property
     def number(self):
-        return self.product.number_for(self.gender)
+        return self.product.article_number
 
 
 def groups():
+    """Per categorie (Algemeen, Dames, Heren). Bestaat dezelfde naam in meer categorieën, dan staat die erbij."""
+    products = sorted(
+        Product.objects.filter(kind=Product.KIND_ARTICLE).prefetch_related("variants"),
+        key=lambda p: (CATEGORY_ORDER.index(p.category), p.sort_order, p.title),
+    )
+    counts = Counter(product.title.casefold() for product in products)
     result = []
-    products = Product.objects.filter(kind=Product.KIND_ARTICLE).prefetch_related("variants")
     for product in products:
-        by_gender = {}
-        for variant in product.variants.all():
-            by_gender.setdefault(variant.gender, {})[variant.size.upper()] = variant
-        for gender in sorted(by_gender, key=["", "H", "D"].index):
-            name = product.title
-            if len(by_gender) > 1 and gender:
-                name = f"{product.title} ({GENDER_SUFFIX[gender]})"
-            result.append(Group(product, gender, name, by_gender[gender]))
+        name = product.title
+        if counts[name.casefold()] > 1 and product.category_label:
+            name = f"{product.title} ({product.category_label.lower()})"
+        result.append(Group(product, name, {v.size.upper(): v for v in product.variants.all()}))
     return result
 
 

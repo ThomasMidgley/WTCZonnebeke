@@ -3,7 +3,8 @@
 {% block heading %}Stock{% endblock %}
 {% block content %}
 <p><a href="{% url 'stock:product' variant.product_id %}">← {{ variant.product.title }}</a></p>
-<p class="size-big">{{ variant.label }}</p>
+<p class="size-big">{{ variant.size }}</p>
+<p class="meta">{{ variant.product.title }} · {{ variant.product.get_category_display }}</p>
 <p class="meta">In de kast: <strong>{{ variant.stock }}</strong> · gereserveerd: {{ variant.reserved }} · vrij: {{ variant.available }}</p>
 <form method="post" class="adjust" novalidate>
   {% csrf_token %}

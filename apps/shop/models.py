@@ -40,9 +40,13 @@ class Product(ClusterableModel):
         (KIND_EVENT, "Event of inschrijving (geen stock, bv. clubfeest)"),
         (KIND_MEMBERSHIP, "Lidgeld (een aansluiting per persoon)"),
     ]
-    # Titels van de rubrieken in de shop, in deze volgorde.
-    CATEGORIES = [
-        (KIND_MEMBERSHIP, "Lidgeld"), (KIND_ARTICLE, "Artikels"), (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events"),
+    CATEGORY_GENERAL = "algemeen"
+    CATEGORY_LADIES = "dames"
+    CATEGORY_MEN = "heren"
+    ARTICLE_CATEGORIES = [(CATEGORY_GENERAL, "Algemeen"), (CATEGORY_LADIES, "Dames"), (CATEGORY_MEN, "Heren")]
+    # Titels van de rubrieken in de shop, in deze volgorde. Artikels staan per categorie.
+    SECTIONS = [
+        (KIND_MEMBERSHIP, "Lidgeld"), *ARTICLE_CATEGORIES, (KIND_PACKAGE, "Pakketten"), (KIND_EVENT, "Events"),
     ]
 
     title = models.CharField("naam", max_length=120)
@@ -53,12 +57,12 @@ class Product(ClusterableModel):
         "wagtailimages.Image", verbose_name="foto", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     price = models.DecimalField("prijs (€)", max_digits=7, decimal_places=2)
+    category = models.CharField(
+        "categorie", max_length=10, choices=ARTICLE_CATEGORIES, default=CATEGORY_GENERAL,
+        help_text="Enkel voor artikels: de rubriek in de webshop en in het stockbeheer.",
+    )
     article_number = models.CharField(
         "artikelnummer", max_length=30, blank=True, help_text="Eén nummer voor alle maten van dit artikel."
-    )
-    article_number_ladies = models.CharField(
-        "artikelnummer dames", max_length=30, blank=True,
-        help_text="Enkel invullen als de damesmaten een ander nummer hebben (bv. 41361 D).",
     )
     members_only = models.BooleanField(
         "enkel voor leden", default=True, help_text="Controle op het e-mailadres in de ledenlijst van Cyql."
@@ -94,7 +98,7 @@ class Product(ClusterableModel):
         MultiFieldPanel(
             [
                 FieldPanel("title"), FieldPanel("slug"), FieldPanel("kind"), FieldPanel("price"),
-                FieldRowPanel([FieldPanel("article_number"), FieldPanel("article_number_ladies")]),
+                FieldRowPanel([FieldPanel("category"), FieldPanel("article_number")]),
                 FieldPanel("image"),
             ],
             heading="Artikel",
@@ -186,29 +190,32 @@ class Product(ClusterableModel):
     def visible_variants(self):
         return [v for v in self.variants.all() if v.is_active]
 
-    def number_for(self, gender):
-        if gender == "D" and self.article_number_ladies:
-            return self.article_number_ladies
-        return self.article_number
+    @property
+    def section(self):
+        """Rubriek in de webshop: de soort, of voor een artikel de categorie."""
+        return self.category if self.kind == self.KIND_ARTICLE else self.kind
+
+    def category_column(self):
+        return self.get_category_display() if self.kind == self.KIND_ARTICLE else ""
+
+    category_column.short_description = "categorie"
 
     @property
-    def article_numbers(self):
-        """Voor overzichten: "41361" of "41361 · 41361 D"."""
-        return " · ".join(n for n in [self.article_number, self.article_number_ladies] if n)
+    def category_label(self):
+        """"Dames" of "Heren"; leeg voor algemene artikels."""
+        if self.category == self.CATEGORY_GENERAL:
+            return ""
+        return self.get_category_display()
 
 
 class Variant(Orderable):
-    GENDERS = [("", "Unisex"), ("H", "Heren"), ("D", "Dames")]
-
     product = ParentalKey(Product, on_delete=models.CASCADE, related_name="variants")
-    gender = models.CharField("heren/dames", max_length=1, choices=GENDERS, blank=True)
     size = models.CharField("maat", max_length=10)
     stock = models.IntegerField("in de kast", default=0, help_text="Wijzig je dit hier, dan komt dat niet in het logboek.")
     is_active = models.BooleanField("te koop", default=True)
 
     panels = [
-        FieldRowPanel([FieldPanel("gender"), FieldPanel("size")]),
-        FieldRowPanel([FieldPanel("stock"), FieldPanel("is_active")]),
+        FieldRowPanel([FieldPanel("size"), FieldPanel("stock"), FieldPanel("is_active")]),
     ]
 
     class Meta(Orderable.Meta):
@@ -220,12 +227,12 @@ class Variant(Orderable):
 
     @property
     def label(self):
-        gender = dict(self.GENDERS).get(self.gender, "")
-        return f"{gender} {self.size}".strip() if self.gender else self.size
+        """Maat met de categorie erbij (bv. "Dames M"), zodat een bestelling ondubbelzinnig is."""
+        return f"{self.product.category_label} {self.size}".strip()
 
     @property
     def article_number(self):
-        return self.product.number_for(self.gender)
+        return self.product.article_number
 
     @property
     def reserved(self):
@@ -245,8 +252,22 @@ class PackageComponent(Orderable):
         related_name="+",
         limit_choices_to={"kind": Product.KIND_ARTICLE},
     )
+    alternative = models.ForeignKey(
+        Product,
+        verbose_name="of in de plaats",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+        limit_choices_to={"kind": Product.KIND_ARTICLE},
+        help_text="Bv. de damesversie van een herenartikel: de koper kiest dan een maat uit beide.",
+    )
 
-    panels = [FieldPanel("component")]
+    panels = [FieldRowPanel([FieldPanel("component"), FieldPanel("alternative")])]
+
+    @property
+    def choices(self):
+        return [p for p in (self.component, self.alternative) if p]
 
     class Meta(Orderable.Meta):
         verbose_name = "onderdeel"
@@ -408,8 +429,8 @@ class ShopPage(RoutablePageMixin, Page):
     def index(self, request):
         products = list(Product.objects.filter(is_visible=True).select_related("image"))
         categories = [
-            {"kind": kind, "title": title, "products": [p for p in products if p.kind == kind]}
-            for kind, title in Product.CATEGORIES
+            {"kind": kind, "title": title, "products": [p for p in products if p.section == kind]}
+            for kind, title in Product.SECTIONS
         ]
         categories = [c for c in categories if c["products"]]
         return self.render(request, context_overrides={"products": products, "categories": categories})
