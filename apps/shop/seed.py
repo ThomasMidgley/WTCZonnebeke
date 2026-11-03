@@ -28,7 +28,6 @@ ARTICLES = [
     ("body", "Body", "59", {"H": "51972", "D": "57972 D"}, None, ""),
     ("kniebroek", "Kniebroek ¾", "86", {"": "54421"}, None, "Bibshort tot over de knie."),
     ("korte-broek-dames", "Korte broek dames zonder bretellen", "59", {"D": "52158 D"}, None, ""),
-    ("thermisch-fietshirt", "Thermisch fietshirt", "75", {"H": "51472", "D": "51472 D"}, None, "Bioracer Icon Tempest."),
     ("armstukken", "Armstukken", "19", {"": "59350"}, None, "Voor het tussenseizoen."),
     ("kousen", "Kousen", "16", {"": "59107"}, None, ""),
 ]
@@ -48,34 +47,36 @@ def seed_image(filename, title):
         return Image.objects.create(title=title, file=ImageFile(handle, name=filename))
 
 
+CATEGORY = {"": Product.CATEGORY_GENERAL, "H": Product.CATEGORY_MEN, "D": Product.CATEGORY_LADIES}
+
+
 def seed_shop():
-    """Maakt de artikels enkel aan als de shop nog leeg is."""
+    """Maakt de artikels enkel aan als de shop nog leeg is. Heren en dames zijn aparte artikels."""
     if Product.objects.exists():
         return False
+    versions = {}
     for order, (slug, title, price, numbers, photo, description) in enumerate(ARTICLES, start=1):
-        main = numbers.get("H") or numbers.get("") or numbers.get("D", "")
-        ladies = numbers.get("D", "") if numbers.get("D") != main else ""
-        product = Product.objects.create(
-            slug=slug, title=title, price=Decimal(price), description=description,
-            article_number=main, article_number_ladies=ladies,
-            image=seed_image(photo, title) if photo else None, sort_order=order * 10,
-        )
-        position = 0
-        for gender in numbers:
-            for size in SIZES:
-                Variant.objects.create(
-                    product=product, gender=gender, size=size,
-                    stock=DUMMY_STOCK[size], sort_order=position,
-                )
-                position += 1
+        image = seed_image(photo, title) if photo else None
+        for gender, number in numbers.items():
+            product = Product.objects.create(
+                slug=f"{slug}-dames" if gender == "D" and len(numbers) > 1 else slug,
+                title=title, price=Decimal(price), description=description, image=image, sort_order=order * 10,
+                category=CATEGORY[gender], article_number=number,
+            )
+            versions.setdefault(slug, []).append(product)
+            for position, size in enumerate(SIZES):
+                Variant.objects.create(product=product, size=size, stock=DUMMY_STOCK[size], sort_order=position)
     slug, title, price, parts = PACKAGE
-    package = Product.objects.create(
-        slug=slug, title=title, kind=Product.KIND_PACKAGE, price=Decimal(price), sort_order=0,
-        description="Het volledige clubpakket: trui korte en lange mouw, korte en lange broek, body en kousen. "
-        "Je kiest de maat per onderdeel.",
-    )
-    for position, part in enumerate(parts):
-        PackageComponent.objects.create(package=package, component=Product.objects.get(slug=part), sort_order=position)
+    # Een pakket voor heren en een voor dames; onderdelen zonder dames- of herenversie (kousen) staan in beide.
+    for suffix, pick, position in (("heren", 0, 0), ("dames", -1, 1)):
+        package = Product.objects.create(
+            slug=f"{slug}-dames" if suffix == "dames" else slug, title=f"{title} {suffix}",
+            kind=Product.KIND_PACKAGE, price=Decimal(price), sort_order=position,
+            description="Het volledige clubpakket: trui korte en lange mouw, korte en lange broek, body en kousen. "
+            "Je kiest de maat per onderdeel.",
+        )
+        for order, part in enumerate(parts):
+            PackageComponent.objects.create(package=package, component=versions[part][pick], sort_order=order)
     return True
 
 

@@ -41,8 +41,10 @@ class ProductViewSet(ModelViewSet):
     model = Product
     icon = "tag"
     menu_label = "Artikels"
-    list_display = ["title", "kind", "price", "members_only", "is_visible", "participants_link"]
-    list_filter = ["kind", "members_only", "is_visible"]
+    list_display = [
+        "title", "kind", "category_column", "article_number", "price", "members_only", "is_visible", "participants_link",
+    ]
+    list_filter = ["kind", "category", "members_only", "is_visible"]
     search_fields = ["title"]
 
     @property

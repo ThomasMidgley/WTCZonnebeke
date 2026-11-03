@@ -32,8 +32,8 @@ class ShopBase(TestCase):
         call_command("seed_site", verbosity=0)
         cls.trui = Product.objects.get(slug="trui-korte-mouw")
         cls.pakket = Product.objects.get(slug="clubpakket")
-        cls.trui_m = cls.trui.variants.get(gender="H", size="M")
-        cls.trui_xs = cls.trui.variants.get(gender="H", size="XS")
+        cls.trui_m = cls.trui.variants.get(size="M")
+        cls.trui_xs = cls.trui.variants.get(size="XS")
         Member.objects.create(cyql_id="11111111-1111-1111-1111-111111111111", first_name="Jan", last_name="Peeters",
                               email="jan@example.com", status="APPROVED")
         toegang = Toegang.load()
@@ -66,16 +66,15 @@ class ShopTests(ShopBase):
     # ------------------------------------------------------------ startinhoud
 
     def test_seed_from_stock_list(self):
-        self.assertEqual(Product.objects.filter(kind=Product.KIND_ARTICLE).count(), 10)
+        self.assertEqual(Product.objects.filter(kind=Product.KIND_ARTICLE).count(), 14)  # heren en dames apart
         self.assertEqual(self.pakket.price, Decimal("180"))
         self.assertEqual(
             [c.component.slug for c in self.pakket.components.all()],
             ["trui-korte-mouw", "trui-lange-mouw", "korte-broek-bretellen", "lange-broek", "body", "kousen"],
         )
         self.assertEqual(self.trui_m.article_number, "41361")
-        self.assertEqual(self.trui.variants.get(gender="D", size="M").article_number, "41361 D")
         call_command("seed_site", verbosity=0)
-        self.assertEqual(Product.objects.count(), 14)  # 10 artikels, pakket, 3 soorten lidgeld
+        self.assertEqual(Product.objects.count(), 19)  # 14 artikels, 2 pakketten, 3 soorten lidgeld
 
     def test_shop_pages(self):
         response = self.client.get("/shop/")
@@ -229,26 +228,44 @@ class ShopTests(ShopBase):
         self.assertEqual(Variant.objects.get(pk=self.trui_m.pk).stock, 8)
         self.assertEqual(StockMovement.objects.get().reason, "Levering Bioracer")
 
-    def test_article_number_per_article(self):
-        self.assertEqual((self.trui.article_number, self.trui.article_number_ladies), ("41361", "41361 D"))
-        dames = Product.objects.get(slug="korte-broek-dames")
-        self.assertEqual((dames.article_number, dames.article_number_ladies), ("52158 D", ""))
-        self.assertEqual(dames.variants.first().article_number, "52158 D")
+    def test_article_categories(self):
+        dames = Product.objects.get(slug="trui-korte-mouw-dames")
+        self.assertEqual((self.trui.category, self.trui.article_number), ("heren", "41361"))
+        self.assertEqual((dames.category, dames.article_number), ("dames", "41361 D"))
+        self.assertEqual(Product.objects.get(slug="kousen").category, "algemeen")
+        self.assertEqual(Product.objects.get(slug="korte-broek-dames").category, "dames")
+        self.assertEqual(dames.variants.get(size="M").label, "Dames M")
+        self.assertEqual(Product.objects.get(slug="kousen").variants.get(size="M").label, "M")
+        response = self.client.get("/shop/")
+        titles = [c["title"] for c in response.context["categories"]]
+        self.assertEqual(titles, ["Lidgeld", "Algemeen", "Dames", "Heren", "Pakketten"])
+
+    def test_packages_for_men_and_ladies(self):
+        dames = Product.objects.get(slug="clubpakket-dames")
+        self.assertEqual((self.pakket.title, dames.title), ("Clubpakket heren", "Clubpakket dames"))
+        self.assertEqual(
+            [c.component.slug for c in dames.components.all()],
+            ["trui-korte-mouw-dames", "trui-lange-mouw-dames", "korte-broek-bretellen-dames", "lange-broek-dames",
+             "body-dames", "kousen"],
+        )
+        response = self.client.get("/shop/clubpakket-dames/")
+        self.assertContains(response, ">M<")
+        self.assertNotContains(response, "Heren M")
+        self.add_to_cart(dames, [c.component.variants.get(size="M") for c in dames.components.all()])
+        self.checkout()
+        line = Order.objects.get().lines.get(product__slug="trui-korte-mouw-dames")
+        self.assertEqual((line.title, line.size), ("Clubpakket dames: Trui korte mouw", "Dames M"))
+        self.assertFalse(Product.objects.filter(slug__startswith="thermisch").exists())
 
     def test_stock_app_list_and_size_table(self):
         self.client.force_login(self.stock_user())
         response = self.client.get("/stock/voorraad/")
-        self.assertContains(response, "Trui korte mouw")
-        self.assertContains(response, "41361 · 41361 D")
+        self.assertEqual([section["title"] for section in response.context["sections"]], ["Algemeen", "Dames", "Heren"])
+        self.assertContains(response, "<small>41361 D</small>", html=True)
         self.assertContains(response, f'href="/stock/voorraad/artikel/{self.trui.pk}/"')
         response = self.client.get(f"/stock/voorraad/artikel/{self.trui.pk}/")
-        self.assertContains(response, "<th scope=\"col\">Heren</th>", html=False)
-        self.assertContains(response, "<th scope=\"col\">Dames</th>", html=False)
+        self.assertEqual([v.size for v in response.context["variants"]], ["XS", "S", "M", "L", "XL", "XXL", "XXXL"])
         self.assertContains(response, f'href="/stock/voorraad/{self.trui_m.pk}/"')
-        sizes = [size for size, _ in response.context["rows"]]
-        self.assertEqual(sizes, ["XS", "S", "M", "L", "XL", "XXL", "XXXL"])
-        kousen = Product.objects.get(slug="kousen")
-        self.assertEqual(self.client.get(f"/stock/voorraad/artikel/{kousen.pk}/").context["columns"], ["Stock"])
         self.assertEqual(self.client.get(f"/stock/voorraad/artikel/{self.pakket.pk}/").status_code, 404)
         response = self.client.post(
             f"/stock/voorraad/{self.trui_m.pk}/", {"delta": "1", "reason": "Telling", "detail": ""}
@@ -262,6 +279,8 @@ class ShopTests(ShopBase):
         self.assertEqual(lines[0], "artikel;artikelnummer;XS;S;M;L;XL;XXL;XXXL")
         self.assertIn("Trui korte mouw (heren);41361;0;2;3;3;2;1;0", lines)
         self.assertIn("Trui korte mouw (dames);41361 D;0;2;3;3;2;1;0", lines)
+        self.assertIn("Korte broek dames zonder bretellen;52158 D;0;2;3;3;2;1;0", lines)
+        self.assertLess(lines.index("Kousen;59107;0;2;3;3;2;1;0"), lines.index("Trui korte mouw (dames);41361 D;0;2;3;3;2;1;0"))
         self.assertIn("Kousen;59107;0;2;3;3;2;1;0", lines)
 
         upload = "artikel;artikelnummer;XS;S;M;L;XL;XXL;XXXL\nTrui korte mouw (heren);41361;1;;7;3;2;1;0\n"
@@ -271,8 +290,8 @@ class ShopTests(ShopBase):
         self.assertIn("Kousen", missing)
         self.trui_m.refresh_from_db()
         self.assertEqual(self.trui_m.stock, 7)
-        self.assertEqual(self.trui.variants.get(gender="H", size="S").stock, 0)
-        self.assertEqual(self.trui.variants.get(gender="D", size="M").stock, 3)
+        self.assertEqual(self.trui.variants.get(size="S").stock, 0)
+        self.assertEqual(Product.objects.get(slug="trui-korte-mouw-dames").variants.get(size="M").stock, 3)
         movement = StockMovement.objects.get(variant=self.trui_m)
         self.assertEqual((movement.delta, movement.reason, movement.user), (4, "Import csv", user))
 
@@ -340,12 +359,12 @@ class EventTests(ShopBase):
         cyql.invite_link = "https://cyql.example/uitnodiging"
         cyql.save()
 
-    def test_shop_has_four_categories(self):
+    def test_shop_sections(self):
         response = self.client.get("/shop/")
-        for heading in ("Artikels", "Pakketten", "Events", "Lidgeld"):
+        for heading in ("Algemeen", "Dames", "Heren", "Pakketten", "Events", "Lidgeld"):
             self.assertContains(response, f">{heading}</h2>")
         content = response.content.decode()
-        self.assertLess(content.index(">Lidgeld</h2>"), content.index(">Artikels</h2>"))  # lidgeld bovenaan
+        self.assertLess(content.index(">Lidgeld</h2>"), content.index(">Algemeen</h2>"))  # lidgeld bovenaan
         self.assertContains(response, "Clubfeest")
 
     def test_event_places(self):

@@ -103,28 +103,28 @@ De QR-codes op de pijltjes wijzen altijd naar hetzelfde adres. Dat adres nooit w
 
 ## Webshop: artikels, pakketten en events
 
-Alles wat te koop is, beheer je in **Webshop** > **Artikels**; de soort bepaalt in welke rubriek het in de shop komt.
+Alles wat te koop is, beheer je in **Webshop** > **Artikels**; de soort bepaalt in welke rubriek het in de shop komt. Artikels staan in drie rubrieken volgens hun categorie: **Algemeen**, **Dames** en **Heren**. De shop toont van boven naar onder: Lidgeld, Algemeen, Dames, Heren, Pakketten, Events.
 
 | Soort | Voorbeeld | Bijzonder |
 | --- | --- | --- |
-| Artikel | Trui korte mouw | Maten (heren/dames) met stock per maat |
-| Pakket | Clubpakket €180 | Bundel van artikelen; de klant kiest per onderdeel een maat |
+| Artikel | Trui korte mouw (heren) | Categorie Algemeen, Dames of Heren; één artikelnummer; stock per maat |
+| Pakket | Clubpakket heren of dames, €180 | Bundel van artikelen; de klant kiest per onderdeel een maat |
 | Event of inschrijving | Clubfeest, WaCaCa | Geen stock, wel plaatsen, einddatum en extra vragen |
 
 ### Een artikel toevoegen of wijzigen
 
 1. **Webshop** > **Artikels** > **Artikel toevoegen** (of klik op een bestaand artikel).
-2. Vul naam, adres (bv. `trui-korte-mouw`, zonder spaties), soort, prijs, artikelnummer en foto in. Het artikelnummer geldt voor alle maten. Hebben de damesmaten een eigen nummer (bv. *41361 D*), vul dat in bij *Artikelnummer dames*.
+2. Vul naam, adres (bv. `trui-korte-mouw`, zonder spaties), soort, prijs, categorie, artikelnummer en foto in. Het artikelnummer geldt voor alle maten. Bestaat een artikel voor dames en voor heren, maak dan twee artikels: elk met zijn eigen categorie, artikelnummer en adres (bv. `trui-korte-mouw-dames`). Dezelfde naam mag.
 3. *Enkel voor leden* aan: bij het afrekenen kijkt de website of het e-mailadres in de ledenlijst van Cyql staat.
 4. *Zichtbaar in de shop* uit: het artikel verdwijnt uit de shop zonder dat je iets verliest.
-5. Bij **Maten en stock** voeg je per maat een lijn toe: heren/dames, maat, aantal in de kast en *te koop*.
+5. Bij **Maten en stock** voeg je per maat een lijn toe: maat, aantal in de kast en *te koop*.
 6. **Opslaan**.
 
 De stock wijzig je liefst in de stock-app op de gsm, dan komt de reden in het logboek. Een wijziging hier in de beheeromgeving komt niet in het logboek.
 
 ### Een pakket
 
-Kies soort *Pakket* en voeg bij **Onderdelen** de artikelen toe. Een pakket heeft zelf geen maten: de stock telt per onderdeel.
+Kies soort *Pakket* en voeg bij **Onderdelen** de artikelen toe. Een pakket heeft zelf geen maten: de stock telt per onderdeel. Er is een *Clubpakket heren* met de herenartikels en een *Clubpakket dames* met de damesartikels; algemene artikels zoals kousen staan in beide.
 
 ### Een event of inschrijving
 
@@ -213,7 +213,7 @@ De knop **Niet afgehaald: terug in voorraad** verschijnt pas 4 weken nadat je de
 
 ### Tabblad Stock
 
-Je ziet een lijst van alle artikels met de foto, de naam en daaronder het artikelnummer. Tik op een artikel voor de maattabel: per maat (XS tot XXXL), en apart voor heren en dames, het aantal in de kast (groot) en wat vrij is na de openstaande bestellingen (klein). Om een aantal aan te passen:
+Je ziet de artikels per categorie (Algemeen, Dames, Heren), met de foto, de naam en daaronder het artikelnummer. Tik op een artikel voor de maattabel: per maat (XS tot XXXL) het aantal in de kast en wat vrij is na de openstaande bestellingen. Om een aantal aan te passen:
 
 1. Tik op het aantal in de maattabel.
 2. Vul in hoeveel er bijkomen (bv. *5*) of afgaan (bv. *-2*).
@@ -226,7 +226,7 @@ Doe na elke levering van Bioracer en na een telling meteen de aanpassing, zodat 
 
 Op de computer: **Webshop** > **Stock exporteren/importeren** (ook voor de stockbeheerder).
 
-- **Download de stock (csv)**: één regel per artikel (heren en dames apart). Kolommen: artikel, artikelnummer en dan één kolom per maat (XS tot XXXL) met het aantal in de kast. Het bestand opent in Excel.
+- **Download de stock (csv)**: één regel per artikel, per categorie (Algemeen, Dames, Heren). Bestaat dezelfde naam bij dames en heren, dan staat de categorie tussen haakjes achter de naam, bv. *Trui korte mouw (dames)*. Kolommen: artikel, artikelnummer en dan één kolom per maat (XS tot XXXL) met het aantal in de kast. Het bestand opent in Excel.
 - **Inlezen**: pas de aantallen aan (bv. na een volledige telling) en lees het bestand weer in. De stock van elke maat op een regel wordt **overschreven**; een lege cel telt als 0. Artikels die niet in het bestand staan, blijven ongewijzigd.
 - De website herkent een artikel aan de naam zoals in de export, of anders aan het artikelnummer.
 - Elke wijziging komt in het logboek met als reden *Import csv*. Staat er een fout in het bestand (onbekend artikel, geen getal, ...), dan wordt niets ingelezen en zie je welke regel fout is.

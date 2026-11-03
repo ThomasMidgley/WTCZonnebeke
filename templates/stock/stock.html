@@ -3,14 +3,17 @@
 {% block title %}Stock{% endblock %}
 {% block heading %}Stock{% endblock %}
 {% block content %}
-<ul class="products">
-  {% for product in products %}
-    <li><a href="{% url 'stock:product' product.pk %}">
-      {% if product.image %}{% image product.image fill-120x120 class="thumb" alt="" %}{% else %}<span class="thumb" aria-hidden="true"></span>{% endif %}
-      <span><strong>{{ product.title }}</strong>{% if product.article_numbers %}<small>{{ product.article_numbers }}</small>{% endif %}</span>
-    </a></li>
-  {% empty %}
-    <li class="empty">Nog geen artikels.</li>
-  {% endfor %}
-</ul>
+{% for section in sections %}
+  <h2 class="section">{{ section.title }}</h2>
+  <ul class="products">
+    {% for product in section.products %}
+      <li><a href="{% url 'stock:product' product.pk %}">
+        {% if product.image %}{% image product.image fill-120x120 class="thumb" alt="" %}{% else %}<span class="thumb" aria-hidden="true"></span>{% endif %}
+        <span><strong>{{ product.title }}</strong>{% if product.article_number %}<small>{{ product.article_number }}</small>{% endif %}</span>
+      </a></li>
+    {% endfor %}
+  </ul>
+{% empty %}
+  <p class="empty">Nog geen artikels.</p>
+{% endfor %}
 {% endblock %}

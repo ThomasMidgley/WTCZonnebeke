@@ -50,14 +50,16 @@ a { color: var(--accent-text); }
 .products strong { display: block; font-size: 1.05rem; }
 .products small { display: block; color: var(--muted); font-size: 0.85rem; }
 .product-title { margin: 0.5rem 0 0; font-size: 1.3rem; }
+.section { margin: 1.5rem 0 0.25rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.section:first-child { margin-top: 0; }
 .sizes { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
 .sizes th, .sizes td { border-bottom: 1px solid var(--line); padding: 0; text-align: center; }
 .sizes thead th { font-size: 0.9rem; color: var(--muted); padding: 0.4rem 0; }
-.sizes tbody th { font-weight: 800; font-size: 1.05rem; width: 4.5rem; text-align: left; padding-left: 0.25rem; }
-.sizes td a { display: grid; padding: 0.5rem 0.25rem; color: inherit; text-decoration: none; min-height: 3.5rem; align-content: center; }
-.sizes td a:active { background: var(--surface); }
-.sizes .count { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
-.sizes .free { font-size: 0.8rem; color: var(--muted); }
-.sizes .free.neg { color: #b00020; }
-.sizes .none { color: var(--line); }
 .sizes thead th:first-child { text-align: left; padding-left: 0.25rem; }
+.sizes tbody th { width: 30%; text-align: left; }
+.sizes tbody th a { display: block; padding: 0.9rem 0.25rem; font-weight: 800; font-size: 1.1rem; color: inherit; text-decoration: none; }
+.sizes td a { display: block; padding: 0.7rem 0.25rem; color: inherit; text-decoration: none; }
+.sizes tr:active { background: var(--surface); }
+.sizes .count { font-size: 1.4rem; font-weight: 700; }
+.sizes .free { color: var(--muted); font-size: 1.05rem; }
+.sizes .free.neg { color: #b00020; font-weight: 700; }

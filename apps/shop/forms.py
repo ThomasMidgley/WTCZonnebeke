@@ -9,7 +9,7 @@ def variant_choices(product):
     choices = []
     for variant in product.visible_variants():
         hint = " (voorbestelling)" if variant.available <= 0 else ""
-        choices.append((str(variant.pk), f"{variant.label}{hint}"))
+        choices.append((str(variant.pk), f"{variant.size}{hint}"))
     return choices
 
 
@@ -31,12 +31,11 @@ class AddToCartForm(QuestionsMixin, forms.Form):
             else:
                 self.fields["qty"].label = "Aantal personen"
         elif product.is_package:
-            self.parts = [c.component for c in product.components.select_related("component")]
+            self.parts = [(c.component.title, c.component) for c in product.components.select_related("component")]
         else:
-            self.parts = [product]
+            self.parts = [("Maat", product)]
         self.add_questions(product.form.questions.all() if product.is_registration and product.form_id else [])
-        for index, part in enumerate(self.parts):
-            label = part.title if product.is_package else "Maat"
+        for index, (label, part) in enumerate(self.parts):
             self.fields[f"variant_{index}"] = forms.ChoiceField(
                 label=label, choices=[("", "Kies je maat")] + variant_choices(part)
             )
@@ -60,7 +59,7 @@ class AddToCartForm(QuestionsMixin, forms.Form):
             data["variants"] = []
             return data
         chosen = []
-        for index, part in enumerate(self.parts):
+        for index, (_, part) in enumerate(self.parts):
             value = data.get(f"variant_{index}")
             variant = next((v for v in part.visible_variants() if str(v.pk) == value), None)
             if value and variant is None:

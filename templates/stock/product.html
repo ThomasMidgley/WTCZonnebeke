@@ -4,21 +4,17 @@
 {% block content %}
 <p><a href="{% url 'stock:stock' %}">← Alle artikels</a></p>
 <h2 class="product-title">{{ product.title }}</h2>
-{% if product.article_numbers %}<p class="meta">Artikelnummer {{ product.article_numbers }}</p>{% endif %}
-{% if rows %}
-<p class="meta">Groot: in de kast. Klein: <strong>vrij</strong> (na wat besteld is). Tik op een aantal om bij te tellen of af te trekken.</p>
+<p class="meta">{{ product.get_category_display }}{% if product.article_number %} · artikelnummer {{ product.article_number }}{% endif %}</p>
+{% if variants %}
+<p class="meta">Tik op een maat om bij te tellen of af te trekken. <strong>Vrij</strong> is wat overblijft na de openstaande bestellingen.</p>
 <table class="sizes">
-  <thead><tr><th scope="col">Maat</th>{% for column in columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
+  <thead><tr><th scope="col">Maat</th><th scope="col">In de kast</th><th scope="col">Vrij</th></tr></thead>
   <tbody>
-    {% for size, cells in rows %}
+    {% for v in variants %}
       <tr>
-        <th scope="row">{{ size }}</th>
-        {% for v in cells %}
-          <td>{% if v %}<a href="{% url 'stock:adjust' v.pk %}" aria-label="{{ v.label }}: {{ v.stock }} in de kast, {{ v.available }} vrij">
-            <span class="count">{{ v.stock }}</span>
-            <span class="free{% if v.available < 0 %} neg{% endif %}">vrij {{ v.available }}</span>
-          </a>{% else %}<span class="none">–</span>{% endif %}</td>
-        {% endfor %}
+        <th scope="row"><a href="{% url 'stock:adjust' v.pk %}">{{ v.size }}</a></th>
+        <td><a href="{% url 'stock:adjust' v.pk %}" aria-label="{{ v.size }}: {{ v.stock }} in de kast, {{ v.available }} vrij"><span class="count">{{ v.stock }}</span></a></td>
+        <td class="free{% if v.available < 0 %} neg{% endif %}">{{ v.available }}</td>
       </tr>
     {% endfor %}
   </tbody>
