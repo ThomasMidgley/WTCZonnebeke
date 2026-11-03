@@ -6,7 +6,8 @@ altijd in de groep. Een verwijderd lid blijft gast in de tenant, maar krijgt de
 groepsmails niet meer.
 
 Nodige rechten van de app-registratie (toepassing, met beheerderstoestemming):
-User.Invite.All en GroupMember.ReadWrite.All.
+GroupMember.Read.All (groep opzoeken), User.Read.All (adressen van de leden lezen),
+User.Invite.All (gasten aanmaken) en GroupMember.ReadWrite.All (leden toevoegen en verwijderen).
 """
 
 import logging
@@ -42,11 +43,11 @@ class Graph:
             time.sleep(min(int(response.headers.get("Retry-After", 5)), 30))
         return response
 
-    def get_all(self, url, params=None):
+    def get_all(self, url, params=None, action="lezen uit Microsoft 365"):
         items = []
         while url:
             response = self.request("GET", url, params=params)
-            check(response, "lezen uit Microsoft 365")
+            check(response, action)
             data = response.json()
             items.extend(data.get("value", []))
             url, params = data.get("@odata.nextLink"), None
@@ -61,7 +62,10 @@ def check(response, action):
         except ValueError:
             detail = response.text[:200]
         if response.status_code == 403:
-            detail += " (ontbreken de rechten User.Invite.All en GroupMember.ReadWrite.All?)"
+            detail += (
+                " (ontbreekt een recht of de admin consent? Nodig: GroupMember.Read.All, User.Read.All, "
+                "User.Invite.All en GroupMember.ReadWrite.All)"
+            )
         raise MemberGroupError(f"{action} mislukt ({response.status_code}) {detail}")
 
 
@@ -73,7 +77,7 @@ def wanted_members(settings):
 
 
 def find_group(graph, address):
-    groups = graph.get_all("/groups", {"$filter": f"mail eq '{address.replace(chr(39), '')}'", "$select": "id"})
+    groups = graph.get_all("/groups", {"$filter": f"mail eq '{address.replace(chr(39), '')}'", "$select": "id"}, "groep opzoeken")
     if not groups:
         raise MemberGroupError(f"geen groep gevonden met adres {address}")
     return groups[0]["id"]
@@ -94,15 +98,20 @@ def sync_member_group(graph=None, deadline=None):
     wanted = wanted_members(settings)
     graph = graph or Graph()
     group_id = find_group(graph, settings.member_group)
+    unreadable = 0
     users = graph.get_all(
         f"/groups/{group_id}/members/microsoft.graph.user",
         {"$select": "id,mail,otherMails,userType", "$top": "999"},
+        "groepsleden lezen",
     )
     present = set()
     guests = []
     for user in users:
         present |= user_addresses(user)
-        if user.get("userType") == "Guest":
+        if not user_addresses(user):
+            # Zonder User.Read.All geeft Microsoft enkel het ID: wie we niet kunnen lezen, halen we nooit weg.
+            unreadable += 1
+        elif user.get("userType") == "Guest":
             guests.append(user)
 
     to_add = sorted(set(wanted) - present)
@@ -141,6 +150,8 @@ def sync_member_group(graph=None, deadline=None):
         parts.append(f"niet gelukt voor {', '.join(failed[:5])}{' ...' if len(failed) > 5 else ''}")
     if skipped_removal:
         parts.append(skipped_removal)
+    if unreadable:
+        parts.append(f"van {unreadable} groepsleden is het adres niet leesbaar (recht User.Read.All?), zij blijven staan")
     return ", ".join(parts)
 
 

@@ -205,6 +205,8 @@ Microsoft 365 doet twee dingen voor de website: **aanmelden** in de beheeromgevi
 | --- | --- | --- |
 | openid, profile, email, User.Read | Delegated | Aanmelden |
 | Mail.Send | Application | Mails versturen zonder dat iemand aangemeld is |
+| GroupMember.Read.All | Application | De ledengroep opzoeken |
+| User.Read.All | Application | De e-mailadressen van de leden in de ledengroep lezen |
 | User.Invite.All | Application | Leden als gast in de tenant zetten voor de ledengroep (zonder uitnodigingsmail) |
 | GroupMember.ReadWrite.All | Application | Leden toevoegen aan en verwijderen uit de ledengroep |
 
@@ -227,11 +229,11 @@ Eenmalig instellen:
 1. Microsoft 365-beheercentrum > *Teams & groups* > *Active teams & groups* > *Add a group* > **Microsoft 365**. Naam bv. "Leden WTC Zonnebeke", adres leden@, privacy *Private*, geen Team aanmaken. Eigenaar: info@.
 2. Bij de groep > *Settings*: **Allow external senders to email this group** uit, **Send copies of group conversations and events to group members' inboxes** aan.
 3. *Settings* > *Org settings* > *Microsoft 365 Groups*: **Let group owners add people outside your organization** aan. In Entra > *External Identities* > *External collaboration settings* mag het uitnodigen van gasten niet volledig uit staan.
-4. App-registratie: de rechten User.Invite.All en GroupMember.ReadWrite.All toevoegen (zie hierboven) en **Grant admin consent**.
+4. App-registratie: de rechten GroupMember.Read.All, User.Read.All, User.Invite.All en GroupMember.ReadWrite.All toevoegen (zie hierboven) en **Grant admin consent for ...** (globale beheerder; geldt enkel voor deze app). Pas als er overal "Granted" staat, werkt het.
 5. Beheeromgeving > **Cyql** > *Instellingen* > *Ledengroep*: het adres van de groep, en bij *Enkel deze adressen (test)* eerst 2 of 3 eigen adressen. *Nu synchroniseren*, het verslag nakijken en een testmail sturen naar de groep vanuit Outlook.
 6. Komt de testmail aan, maak het testveld leeg. De volgende sync zet alle leden in de groep.
 
-Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent meestal dat de rechten of de admin consent ontbreken.
+Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent dat een recht of de admin consent ontbreekt; het verslag zegt bij welke stap (groep opzoeken, groepsleden lezen, gast aanmaken, toevoegen). Leden van wie de app het adres niet kan lezen, worden nooit uit de groep gehaald. GroupMember.ReadWrite.All geldt technisch voor alle groepen van de tenant; Microsoft laat geen beperking tot één groep toe. De website raakt enkel de ingestelde groep aan, en daarin enkel gasten.
 
 ### Wie mag binnen
 
