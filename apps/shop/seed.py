@@ -53,15 +53,18 @@ def seed_shop():
     if Product.objects.exists():
         return False
     for order, (slug, title, price, numbers, photo, description) in enumerate(ARTICLES, start=1):
+        main = numbers.get("H") or numbers.get("") or numbers.get("D", "")
+        ladies = numbers.get("D", "") if numbers.get("D") != main else ""
         product = Product.objects.create(
             slug=slug, title=title, price=Decimal(price), description=description,
+            article_number=main, article_number_ladies=ladies,
             image=seed_image(photo, title) if photo else None, sort_order=order * 10,
         )
         position = 0
-        for gender, number in numbers.items():
+        for gender in numbers:
             for size in SIZES:
                 Variant.objects.create(
-                    product=product, gender=gender, size=size, article_number=number,
+                    product=product, gender=gender, size=size,
                     stock=DUMMY_STOCK[size], sort_order=position,
                 )
                 position += 1

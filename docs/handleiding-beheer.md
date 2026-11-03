@@ -114,10 +114,10 @@ Alles wat te koop is, beheer je in **Webshop** > **Artikels**; de soort bepaalt 
 ### Een artikel toevoegen of wijzigen
 
 1. **Webshop** > **Artikels** > **Artikel toevoegen** (of klik op een bestaand artikel).
-2. Vul naam, adres (bv. `trui-korte-mouw`, zonder spaties), soort, prijs en foto in.
+2. Vul naam, adres (bv. `trui-korte-mouw`, zonder spaties), soort, prijs, artikelnummer en foto in. Het artikelnummer geldt voor alle maten. Hebben de damesmaten een eigen nummer (bv. *41361 D*), vul dat in bij *Artikelnummer dames*.
 3. *Enkel voor leden* aan: bij het afrekenen kijkt de website of het e-mailadres in de ledenlijst van Cyql staat.
 4. *Zichtbaar in de shop* uit: het artikel verdwijnt uit de shop zonder dat je iets verliest.
-5. Bij **Maten en stock** voeg je per maat een lijn toe: heren/dames, maat, artikelnummer, aantal in de kast en *te koop*.
+5. Bij **Maten en stock** voeg je per maat een lijn toe: heren/dames, maat, aantal in de kast en *te koop*.
 6. **Opslaan**.
 
 De stock wijzig je liefst in de stock-app op de gsm, dan komt de reden in het logboek. Een wijziging hier in de beheeromgeving komt niet in het logboek.
@@ -213,14 +213,23 @@ De knop **Niet afgehaald: terug in voorraad** verschijnt pas 4 weken nadat je de
 
 ### Tabblad Stock
 
-Per artikel en maat zie je hoeveel er in de kast ligt. Om dat aan te passen:
+Je ziet een lijst van alle artikels met de foto, de naam en daaronder het artikelnummer. Tik op een artikel voor de maattabel: per maat (XS tot XXXL), en apart voor heren en dames, het aantal in de kast (groot) en wat vrij is na de openstaande bestellingen (klein). Om een aantal aan te passen:
 
-1. Tik op de maat.
+1. Tik op het aantal in de maattabel.
 2. Vul in hoeveel er bijkomen (bv. *5*) of afgaan (bv. *-2*).
 3. Kies een reden: *Levering Bioracer*, *Telling (correctie)*, *Beschadigd of verloren* of *Andere* (dan met een korte uitleg).
 4. Tik op **Opslaan**.
 
 Doe na elke levering van Bioracer en na een telling meteen de aanpassing, zodat de webshop juist toont wat beschikbaar is.
+
+### Stock exporteren en importeren (csv)
+
+Op de computer: **Webshop** > **Stock exporteren/importeren** (ook voor de stockbeheerder).
+
+- **Download de stock (csv)**: één regel per artikel (heren en dames apart). Kolommen: artikel, artikelnummer en dan één kolom per maat (XS tot XXXL) met het aantal in de kast. Het bestand opent in Excel.
+- **Inlezen**: pas de aantallen aan (bv. na een volledige telling) en lees het bestand weer in. De stock van elke maat op een regel wordt **overschreven**; een lege cel telt als 0. Artikels die niet in het bestand staan, blijven ongewijzigd.
+- De website herkent een artikel aan de naam zoals in de export, of anders aan het artikelnummer.
+- Elke wijziging komt in het logboek met als reden *Import csv*. Staat er een fout in het bestand (onbekend artikel, geen getal, ...), dan wordt niets ingelezen en zie je welke regel fout is.
 
 ### Tabblad Zoeken en Logboek
 
@@ -314,7 +323,8 @@ In het menu **Cyql** (enkel voor beheerders):
 - **Leden**: de goedgekeurde leden uit Cyql. De webshop gebruikt deze lijst voor *enkel voor leden*. Een nieuw lid kan pas kledij kopen na goedkeuring in Cyql en de volgende nachtelijke synchronisatie.
 - **Synchronisaties**: het verslag van elke nacht, met het resterende weekbudget.
 - **Nu synchroniseren**: meteen alles ophalen, bv. net na het goedkeuren van een nieuw lid. Gebruik dit spaarzaam: Cyql geeft de club een beperkt budget per week (reset op maandag).
-- **Instellingen**: het uur van de nachtelijke synchronisatie, de uitnodigingslink voor nieuwe leden en de link naar een activiteit.
+- **Instellingen**: het uur van de nachtelijke synchronisatie, de uitnodigingslink voor nieuwe leden, de link naar een activiteit, de widgetcode en de ledengroep.
+- **Widgetcode**: plak hier de code van een widget uit het Cyql-dashboard (bv. de komende ritten). Die komt onderaan de pagina Cyql-app. Bezoekers zien eerst een knop *Toon de ritten*: pas na een tik laadt de widget van cyql.app. Leeg laten = geen widget. Code die niet van Cyql komt, wordt geweigerd.
 
 ### Ledengroep: mailen naar alle leden
 

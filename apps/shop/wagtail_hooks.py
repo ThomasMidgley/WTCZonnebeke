@@ -1,5 +1,7 @@
+from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.utils.timezone import localtime
 from wagtail import hooks
@@ -10,6 +12,7 @@ from wagtail.permission_policies import ModelPermissionPolicy
 from apps.formulieren.services import xlsx_response_bytes
 from apps.formulieren.views import xlsx_response
 
+from . import stock_csv
 from .models import Order, OrderLine, Product, StockMovement
 from .stock_views import can_manage_stock as is_stock_user
 
@@ -123,6 +126,11 @@ def movements_menu_item():
 
 
 @hooks.register("register_shop_menu_item")
+def stock_csv_menu_item():
+    return StockMenuItem("Stock exporteren/importeren", reverse("shop_stock_csv"), icon_name="download", order=35)
+
+
+@hooks.register("register_shop_menu_item")
 def stock_app_menu_item():
     return StockMenuItem("Stock-app (gsm)", reverse("stock:to_deliver"), icon_name="mobile-alt", order=40)
 
@@ -174,3 +182,41 @@ def participants_view(request, pk):
 @hooks.register("register_admin_urls")
 def register_participants_url():
     return [path("webshop/deelnemers/<int:pk>/", participants_view, name="shop_participants")]
+
+
+# ---------------------------------------------------------------- stock in csv
+
+MAX_CSV_BYTES = 1024 * 1024
+
+
+def stock_csv_view(request):
+    if not is_stock_user(request.user):
+        raise PermissionDenied
+    if request.GET.get("export"):
+        response = HttpResponse(stock_csv.export_csv(), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="stock-{localtime():%Y-%m-%d}.csv"'
+        return response
+    errors = []
+    if request.method == "POST":
+        upload = request.FILES.get("file")
+        if not upload:
+            errors = ["Kies eerst een csv-bestand."]
+        elif upload.size > MAX_CSV_BYTES:
+            errors = ["Dit bestand is te groot voor een stocklijst."]
+        else:
+            try:
+                changed, missing = stock_csv.import_csv(upload.read(), request.user)
+            except (stock_csv.StockImportError, ValueError) as exc:
+                errors = getattr(exc, "errors", [str(exc)])
+            else:
+                text = f"Stock ingelezen: {changed} maat{'en' if changed != 1 else ''} gewijzigd."
+                if missing:
+                    text += f" Niet in het bestand en dus ongewijzigd: {', '.join(missing)}."
+                messages.success(request, text)
+                return redirect("shop_stock_csv")
+    return render(request, "shop/admin_stock_csv.html", {"errors": errors, "header": ";".join(stock_csv.HEADER)})
+
+
+@hooks.register("register_admin_urls")
+def register_stock_csv_url():
+    return [path("webshop/stock-csv/", stock_csv_view, name="shop_stock_csv")]

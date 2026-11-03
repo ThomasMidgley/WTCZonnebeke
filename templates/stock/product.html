@@ -1,0 +1,29 @@
+{% extends "stock/base.html" %}
+{% block title %}{{ product.title }}{% endblock %}
+{% block heading %}Stock{% endblock %}
+{% block content %}
+<p><a href="{% url 'stock:stock' %}">← Alle artikels</a></p>
+<h2 class="product-title">{{ product.title }}</h2>
+{% if product.article_numbers %}<p class="meta">Artikelnummer {{ product.article_numbers }}</p>{% endif %}
+{% if rows %}
+<p class="meta">Groot: in de kast. Klein: <strong>vrij</strong> (na wat besteld is). Tik op een aantal om bij te tellen of af te trekken.</p>
+<table class="sizes">
+  <thead><tr><th scope="col">Maat</th>{% for column in columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for size, cells in rows %}
+      <tr>
+        <th scope="row">{{ size }}</th>
+        {% for v in cells %}
+          <td>{% if v %}<a href="{% url 'stock:adjust' v.pk %}" aria-label="{{ v.label }}: {{ v.stock }} in de kast, {{ v.available }} vrij">
+            <span class="count">{{ v.stock }}</span>
+            <span class="free{% if v.available < 0 %} neg{% endif %}">vrij {{ v.available }}</span>
+          </a>{% else %}<span class="none">–</span>{% endif %}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Dit artikel heeft geen maten die te koop staan.</p>
+{% endif %}
+{% endblock %}

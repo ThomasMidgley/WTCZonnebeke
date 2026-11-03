@@ -229,6 +229,84 @@ class ShopTests(ShopBase):
         self.assertEqual(Variant.objects.get(pk=self.trui_m.pk).stock, 8)
         self.assertEqual(StockMovement.objects.get().reason, "Levering Bioracer")
 
+    def test_article_number_per_article(self):
+        self.assertEqual((self.trui.article_number, self.trui.article_number_ladies), ("41361", "41361 D"))
+        dames = Product.objects.get(slug="korte-broek-dames")
+        self.assertEqual((dames.article_number, dames.article_number_ladies), ("52158 D", ""))
+        self.assertEqual(dames.variants.first().article_number, "52158 D")
+
+    def test_stock_app_list_and_size_table(self):
+        self.client.force_login(self.stock_user())
+        response = self.client.get("/stock/voorraad/")
+        self.assertContains(response, "Trui korte mouw")
+        self.assertContains(response, "41361 · 41361 D")
+        self.assertContains(response, f'href="/stock/voorraad/artikel/{self.trui.pk}/"')
+        response = self.client.get(f"/stock/voorraad/artikel/{self.trui.pk}/")
+        self.assertContains(response, "<th scope=\"col\">Heren</th>", html=False)
+        self.assertContains(response, "<th scope=\"col\">Dames</th>", html=False)
+        self.assertContains(response, f'href="/stock/voorraad/{self.trui_m.pk}/"')
+        sizes = [size for size, _ in response.context["rows"]]
+        self.assertEqual(sizes, ["XS", "S", "M", "L", "XL", "XXL", "XXXL"])
+        kousen = Product.objects.get(slug="kousen")
+        self.assertEqual(self.client.get(f"/stock/voorraad/artikel/{kousen.pk}/").context["columns"], ["Stock"])
+        self.assertEqual(self.client.get(f"/stock/voorraad/artikel/{self.pakket.pk}/").status_code, 404)
+        response = self.client.post(
+            f"/stock/voorraad/{self.trui_m.pk}/", {"delta": "1", "reason": "Telling", "detail": ""}
+        )
+        self.assertRedirects(response, f"/stock/voorraad/artikel/{self.trui.pk}/")
+
+    def test_stock_csv_export_and_import(self):
+        from . import stock_csv
+
+        lines = stock_csv.export_csv().lstrip("\ufeff").splitlines()
+        self.assertEqual(lines[0], "artikel;artikelnummer;XS;S;M;L;XL;XXL;XXXL")
+        self.assertIn("Trui korte mouw (heren);41361;0;2;3;3;2;1;0", lines)
+        self.assertIn("Trui korte mouw (dames);41361 D;0;2;3;3;2;1;0", lines)
+        self.assertIn("Kousen;59107;0;2;3;3;2;1;0", lines)
+
+        upload = "artikel;artikelnummer;XS;S;M;L;XL;XXL;XXXL\nTrui korte mouw (heren);41361;1;;7;3;2;1;0\n"
+        user = self.stock_user()
+        changed, missing = stock_csv.import_csv(upload.encode("utf-8"), user)
+        self.assertEqual(changed, 3)  # XS 0->1, S 2->0, M 3->7
+        self.assertIn("Kousen", missing)
+        self.trui_m.refresh_from_db()
+        self.assertEqual(self.trui_m.stock, 7)
+        self.assertEqual(self.trui.variants.get(gender="H", size="S").stock, 0)
+        self.assertEqual(self.trui.variants.get(gender="D", size="M").stock, 3)
+        movement = StockMovement.objects.get(variant=self.trui_m)
+        self.assertEqual((movement.delta, movement.reason, movement.user), (4, "Import csv", user))
+
+    def test_stock_csv_import_by_number_and_errors(self):
+        from . import stock_csv
+
+        # Excel bewaart soms met komma's en in Windows-codering; het nummer volstaat als de naam anders is.
+        stock_csv.import_csv("artikel,artikelnummer,M\nKousjes,59107,9\n".encode("cp1252"))
+        self.assertEqual(Product.objects.get(slug="kousen").variants.get(size="M").stock, 9)
+        bad = "artikel;artikelnummer;M;XS\nOnbekend;000;1;1\nKousen;59107;veel;1\n"
+        with self.assertRaises(stock_csv.StockImportError) as ctx:
+            stock_csv.import_csv(bad.encode())
+        self.assertEqual(len(ctx.exception.errors), 2)
+        self.assertEqual(Product.objects.get(slug="kousen").variants.get(size="XS").stock, 0)  # niets ingelezen
+        with self.assertRaises(stock_csv.StockImportError):
+            stock_csv.import_csv(b"naam;maat\n")
+
+    def test_stock_csv_admin_page(self):
+        self.client.force_login(self.stock_user())
+        response = self.client.get("/admin/webshop/stock-csv/?export=1")
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+        self.assertIn("attachment", response["Content-Disposition"])
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        upload = SimpleUploadedFile("stock.csv", "artikel;artikelnummer;M\nKousen;59107;5\n".encode())
+        response = self.client.post("/admin/webshop/stock-csv/", {"file": upload}, follow=True)
+        self.assertContains(response, "Stock ingelezen: 1 maat gewijzigd.")
+        upload = SimpleUploadedFile("stock.csv", b"artikel;artikelnummer;M\nNiets;1;5\n")
+        response = self.client.post("/admin/webshop/stock-csv/", {"file": upload})
+        self.assertContains(response, "Niets ingelezen")
+        other = get_user_model().objects.create_user("lid2", email="lid2@example.com", is_staff=True)
+        self.client.force_login(other)
+        self.assertNotEqual(self.client.get("/admin/webshop/stock-csv/").status_code, 200)
+
     def test_admin_menu_for_stock_user(self):
         self.client.force_login(self.stock_user())
         self.assertEqual(self.client.get("/admin/shop_orders/").status_code, 200)

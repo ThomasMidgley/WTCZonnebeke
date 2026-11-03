@@ -13,4 +13,12 @@
   </aside>
   {% endwith %}
 </div>
+{% with widget=settings.core.CyqlApp.widget %}{% if widget %}
+<section class="wrap content cyql-widget">
+  <h2>Komende ritten in Cyql</h2>
+  <div id="{{ widget.element }}"></div>
+  <button type="button" class="button" data-cyql-widget="{{ widget.src }}">Toon de ritten</button>
+  <p class="meta">De ritten worden geladen van cyql.app wanneer je op de knop tikt.</p>
+</section>
+{% endif %}{% endwith %}
 {% endblock %}

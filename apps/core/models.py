@@ -27,6 +27,26 @@ def validate_logo(file):
         raise ValidationError("Dit SVG-bestand bevat scripts. Exporteer het logo opnieuw als gewone SVG of als PNG.")
 
 
+CYQL_WIDGET_KEYS = ["e", "i", "l", "h", "v", "cr", "m"]
+CYQL_WIDGET_CALL = re.compile(r"\}\)\(\s*document\s*,(?P<args>[^)]*)\)")
+CYQL_WIDGET_VALUE = re.compile(r"^[A-Za-z0-9_.%-]{1,80}$")
+
+
+def parse_cyql_widget(code):
+    """Haalt de instellingen uit de widgetcode van Cyql (de waarden na `document`).
+
+    We voeren de geplakte code nooit zelf uit: de website bouwt het adres van het
+    Cyql-script opnieuw op uit deze waarden. Zo kan er geen ander script binnensluipen.
+    """
+    match = CYQL_WIDGET_CALL.search(code or "")
+    if not match or "dashboard.cyql.app/widgets/cw.js" not in code:
+        raise ValidationError("Dit lijkt geen widgetcode van Cyql. Kopieer de volledige code uit het Cyql-dashboard.")
+    values = re.findall(r"""['"]([^'"]*)['"]""", match.group("args"))
+    if len(values) != len(CYQL_WIDGET_KEYS) or not all(CYQL_WIDGET_VALUE.match(value) for value in values):
+        raise ValidationError("De widgetcode heeft niet de verwachte vorm. Kopieer de code opnieuw uit het Cyql-dashboard.")
+    return dict(zip(CYQL_WIDGET_KEYS, values))
+
+
 def parse_emails(text):
     return {line.strip().lower() for line in text.replace(",", "\n").splitlines() if line.strip()}
 
@@ -195,6 +215,12 @@ class CyqlApp(BaseGenericSetting):
         "https://web.cyql.app/events/view/&lt;club&gt;/{id}. Leeg: de knop verwijst naar de pagina Cyql-app.",
     )
 
+    widget_code = models.TextField(
+        "widgetcode",
+        blank=True,
+        help_text="Plak hier de widgetcode uit het Cyql-dashboard (begint met &lt;script&gt;). De widget komt "
+        "onderaan de pagina Cyql-app en laadt pas als een bezoeker op de knop tikt. Leeg: geen widget.",
+    )
     member_group = models.EmailField(
         "adres ledengroep",
         blank=True,
@@ -214,11 +240,33 @@ class CyqlApp(BaseGenericSetting):
         FieldPanel("sync_time"),
         FieldPanel("invite_link"),
         FieldPanel("event_url"),
+        FieldPanel("widget_code"),
         MultiFieldPanel([FieldPanel("member_group"), FieldPanel("member_group_test")], heading="Ledengroep"),
     ]
 
     class Meta:
         verbose_name = "Cyql-instellingen"
+
+    def clean(self):
+        super().clean()
+        if self.widget_code.strip():
+            try:
+                parse_cyql_widget(self.widget_code)
+            except ValidationError as exc:
+                raise ValidationError({"widget_code": exc.messages}) from exc
+
+    @property
+    def widget(self):
+        """{"element": id, "src": adres van het Cyql-script} of None."""
+        if not self.widget_code.strip():
+            return None
+        try:
+            values = parse_cyql_widget(self.widget_code)
+        except ValidationError:
+            return None
+        from urllib.parse import urlencode
+
+        return {"element": values["e"], "src": f"https://dashboard.cyql.app/widgets/cw.js?{urlencode(values)}"}
 
     @property
     def member_group_test_emails(self):

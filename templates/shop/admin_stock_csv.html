@@ -1,0 +1,28 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Stock exporteren en importeren{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Stock exporteren en importeren" icon="download" %}
+  <div class="nice-padding">
+    <h2>Exporteren</h2>
+    <p>Eén regel per artikel (heren en dames apart), met de stock in de kast per maat.</p>
+    <p><a class="button" href="?export=1">Download de stock (csv)</a></p>
+
+    <h2>Importeren</h2>
+    <p>De eerste regel is <code>{{ header }}</code>. Gebruik het liefst een export als vertrekpunt, pas de aantallen aan en lees het bestand weer in.</p>
+    <ul>
+      <li>De stock van elke maat op een regel wordt <strong>overschreven</strong>; een lege cel telt als 0.</li>
+      <li>Artikels worden herkend aan de naam, of anders aan het artikelnummer.</li>
+      <li>Artikels die niet in het bestand staan, blijven ongewijzigd.</li>
+      <li>Elke wijziging komt in het logboek stock, met als reden "Import csv".</li>
+      <li>Staat er één fout in het bestand, dan wordt niets ingelezen.</li>
+    </ul>
+    {% if errors %}
+      <div class="help-block help-critical"><p><strong>Niets ingelezen:</strong></p><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <p><input type="file" name="file" accept=".csv,text/csv" required></p>
+      <button class="button" type="submit">Inlezen en stock overschrijven</button>
+    </form>
+  </div>
+{% endblock %}
