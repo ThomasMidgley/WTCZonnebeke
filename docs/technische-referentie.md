@@ -205,6 +205,8 @@ Microsoft 365 doet twee dingen voor de website: **aanmelden** in de beheeromgevi
 | --- | --- | --- |
 | openid, profile, email, User.Read | Delegated | Aanmelden |
 | Mail.Send | Application | Mails versturen zonder dat iemand aangemeld is |
+| User.Invite.All | Application | Leden als gast in de tenant zetten voor de ledengroep (zonder uitnodigingsmail) |
+| GroupMember.ReadWrite.All | Application | Leden toevoegen aan en verwijderen uit de ledengroep |
 
 Klik na het toevoegen op **Grant admin consent**. Zonder beperking mag de app met Mail.Send als **elke** mailbox mailen. Beperk dat tot het info@-adres via Exchange Online PowerShell:
 
@@ -215,6 +217,21 @@ Test-ApplicationAccessPolicy -AppId <client-id> -Identity <info@-adres>
 ```
 
 Het afzenderadres stel je in de beheeromgeving in: Instellingen > Integraties > mail\_sender (afzender). Tenant- en client-ID kunnen daar ook, maar de omgevingsvariabelen hebben voorrang.
+
+### Ledengroep
+
+De website houdt een Microsoft 365-groep (bv. leden@wtczonnebeke.be) gelijk met de goedgekeurde Cyql-leden. Leden komen als gast in de tenant zonder uitnodigingsmail; enkel gasten worden toegevoegd of verwijderd. Een verwijderd lid blijft gast in de tenant, maar zit niet meer in de groep (opruimen kan in Entra > *Users*, filter *Guest*). Code: `apps/cyql/member_group.py`.
+
+Eenmalig instellen:
+
+1. Microsoft 365-beheercentrum > *Teams & groups* > *Active teams & groups* > *Add a group* > **Microsoft 365**. Naam bv. "Leden WTC Zonnebeke", adres leden@, privacy *Private*, geen Team aanmaken. Eigenaar: info@.
+2. Bij de groep > *Settings*: **Allow external senders to email this group** uit, **Send copies of group conversations and events to group members' inboxes** aan.
+3. *Settings* > *Org settings* > *Microsoft 365 Groups*: **Let group owners add people outside your organization** aan. In Entra > *External Identities* > *External collaboration settings* mag het uitnodigen van gasten niet volledig uit staan.
+4. App-registratie: de rechten User.Invite.All en GroupMember.ReadWrite.All toevoegen (zie hierboven) en **Grant admin consent**.
+5. Beheeromgeving > **Cyql** > *Instellingen* > *Ledengroep*: het adres van de groep, en bij *Enkel deze adressen (test)* eerst 2 of 3 eigen adressen. *Nu synchroniseren*, het verslag nakijken en een testmail sturen naar de groep vanuit Outlook.
+6. Komt de testmail aan, maak het testveld leeg. De volgende sync zet alle leden in de groep.
+
+Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent meestal dat de rechten of de admin consent ontbreken.
 
 ### Wie mag binnen
 
@@ -290,6 +307,7 @@ Cyql is de club-app waarin leden, ritten en klassementen beheerd worden. De webs
 | Komende ritten en activiteiten, met GPX | Clubkalender en de volgende ritten op de home |
 | Klassementen die op *tonen* staan | Pagina Klassement |
 | Goedgekeurde leden (e-mailadres) | Lidcontrole in de webshop (ledenprijs, artikels enkel voor leden) |
+| Goedgekeurde leden (naam, e-mailadres) | Ledengroep in Microsoft 365 (zie *Microsoft 365-tenant* > *Ledengroep*) |
 
 Bezoekers zien enkel wat in de eigen database staat; een paginabezoek vraagt nooit iets aan Cyql.
 

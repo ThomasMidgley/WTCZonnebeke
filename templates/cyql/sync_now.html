@@ -4,7 +4,9 @@
 {% include "wagtailadmin/shared/header.html" with title="Cyql nu synchroniseren" icon="resubmit" %}
 <div class="nice-padding">
   <p>De website haalt elke nacht automatisch de kalender, de klassementen en de ledenlijst op uit Cyql.
-     Heb je net iets aangepast in Cyql, dan kan je hier meteen synchroniseren.</p>
+     Heb je net iets aangepast in Cyql, dan kan je hier meteen synchroniseren.
+     Is er een ledengroep ingesteld, dan wordt die meteen mee bijgewerkt; zijn er veel nieuwe leden,
+     dan volgt de rest bij de nachtelijke sync.</p>
   <p>Eén synchronisatie kost ongeveer 300 punten van het weekbudget van de club (5.000, elke maandag opnieuw).</p>
   {% if last_run %}
     <p>Laatste synchronisatie: {{ last_run.started_at|date:"l j F Y, H.i" }} uur

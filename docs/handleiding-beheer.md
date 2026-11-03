@@ -316,6 +316,18 @@ In het menu **Cyql** (enkel voor beheerders):
 - **Nu synchroniseren**: meteen alles ophalen, bv. net na het goedkeuren van een nieuw lid. Gebruik dit spaarzaam: Cyql geeft de club een beperkt budget per week (reset op maandag).
 - **Instellingen**: het uur van de nachtelijke synchronisatie, de uitnodigingslink voor nieuwe leden en de link naar een activiteit.
 
+### Ledengroep: mailen naar alle leden
+
+Het adres van de ledengroep (bv. leden@wtczonnebeke.be) is een groep in Microsoft 365. Wie een account in de tenant heeft (het bestuur), mailt vanuit Outlook naar dat adres en elk actief lid krijgt de mail. De leden zien enkel het groepsadres, niet elkaars adressen.
+
+- De website houdt de groep zelf bij: na elke nachtelijke sync komen nieuwe goedgekeurde Cyql-leden erbij en gaat wie niet meer goedgekeurd is eruit. Het verslag staat bij **Synchronisaties** (regel *ledengroep*).
+- Enkel gebruikers van de tenant kunnen naar de groep mailen. Een antwoord van een lid op een groepsmail komt niet aan: vermeld in de mail naar welk adres ze kunnen antwoorden.
+- Bestuursleden met een tenant-account die in de groep staan, haalt de website er nooit uit.
+- **Cyql** > **Instellingen** > *Ledengroep*: het adres van de groep. Leeg laten = de groep wordt niet bijgehouden.
+- *Enkel deze adressen (test)*: vul je hier een paar adressen in, dan bevat de groep alleen die adressen. Maak het veld leeg om alle leden op te nemen.
+- Zijn er veel nieuwe leden tegelijk (bv. de eerste keer), dan zet **Nu synchroniseren** er zoveel bij als in een halve minuut lukt; de rest volgt 's nachts.
+- Zou de groep in één keer meer dan de helft van de leden verliezen, dan doet de website dat niet en meldt ze het in het verslag. Controleer dan de ledenlijst in Cyql.
+
 Volledige namen op het klassement: open **Pagina's** > **Klassement** en vink *Volledige namen tonen* aan. Standaard toont de site enkel voornaam en initiaal.
 
 ## Veelgestelde vragen

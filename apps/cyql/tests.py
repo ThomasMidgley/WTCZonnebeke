@@ -341,3 +341,105 @@ class AdminTests(TestCase):
             response = self.client.post("/admin/cyql/nu-synchroniseren/")
         self.assertRedirects(response, "/admin/cyql_sync/", fetch_redirect_response=False)
         sync.assert_called_once()
+
+
+class FakeGraph:
+    """Doet alsof het Microsoft Graph is: een groep met leden en een lijst gasten."""
+
+    def __init__(self, members):
+        self.members = list(members)
+        self.calls = []
+
+    def get_all(self, url, params=None):
+        if url == "/groups":
+            return [{"id": "g1"}]
+        return list(self.members)
+
+    def request(self, method, url, **kwargs):
+        self.calls.append((method, url))
+        if url == "/invitations":
+            email = kwargs["json"]["invitedUserEmailAddress"]
+            if email.endswith("@fout.test"):
+                return fake_response({"error": {"code": "BadRequest", "message": "nee"}}, status=400)
+            self.invited = getattr(self, "invited", []) + [email]
+            return fake_response({"invitedUser": {"id": f"id-{email}"}})
+        if method == "POST":
+            return fake_response({}, status=204)
+        if method == "DELETE":
+            user_id = url.split("/")[4]
+            self.members = [m for m in self.members if m["id"] != user_id]
+            return fake_response({}, status=204)
+        raise AssertionError(url)
+
+
+def guest(email):
+    return {"id": f"id-{email}", "mail": email, "userType": "Guest"}
+
+
+class MemberGroupTests(TestCase):
+    def setUp(self):
+        settings = CyqlApp.load()
+        settings.member_group = "leden@club.test"
+        settings.save()
+        for index, email in enumerate(["an@example.com", "bert@example.com", "cas@example.com", "dirk@example.com"]):
+            Member.objects.create(
+                cyql_id=f"00000000-0000-0000-0000-00000000000{index}", first_name=email[:3], last_name="X",
+                email=email, status="APPROVED",
+            )
+
+    def test_adds_new_members_and_removes_inactive_guests_only(self):
+        from .member_group import sync_member_group
+
+        board = {"id": "b1", "mail": "info@club.test", "userType": "Member"}
+        graph = FakeGraph(
+            [board, guest("an@example.com"), guest("bert@example.com"), guest("cas@example.com"), guest("weg@example.com")]
+        )
+        summary = sync_member_group(graph=graph)
+        self.assertEqual(graph.invited, ["dirk@example.com"])
+        self.assertIn(("DELETE", "/groups/g1/members/id-weg@example.com/$ref"), graph.calls)
+        self.assertNotIn("b1", str(graph.calls))
+        self.assertIn("1 toegevoegd, 1 verwijderd", summary)
+
+    def test_test_addresses_replace_member_list(self):
+        from .member_group import sync_member_group
+
+        settings = CyqlApp.load()
+        settings.member_group_test = "Test@Example.com\n\n"
+        settings.save()
+        graph = FakeGraph([])
+        sync_member_group(graph=graph)
+        self.assertEqual(graph.invited, ["test@example.com"])
+
+    def test_mass_removal_is_refused(self):
+        from .member_group import sync_member_group
+
+        Member.objects.exclude(email="an@example.com").delete()
+        graph = FakeGraph([guest(f"oud{i}@example.com") for i in range(12)])
+        summary = sync_member_group(graph=graph)
+        self.assertFalse([call for call in graph.calls if call[0] == "DELETE"])
+        self.assertIn("niet verwijderd", summary)
+
+    def test_failed_invite_is_reported_and_others_continue(self):
+        from .member_group import sync_member_group
+
+        Member.objects.create(
+            cyql_id="00000000-0000-0000-0000-000000000009", first_name="F", last_name="X",
+            email="f@fout.test", status="APPROVED",
+        )
+        graph = FakeGraph([])
+        summary = sync_member_group(graph=graph)
+        self.assertEqual(len(graph.invited), 4)
+        self.assertIn("niet gelukt voor f@fout.test", summary)
+
+    def test_deadline_postpones_the_rest(self):
+        from .member_group import sync_member_group
+
+        summary = sync_member_group(graph=FakeGraph([]), deadline=0.000001)
+        self.assertIn("4 volgen bij de volgende sync", summary)
+
+    def test_run_sync_skips_group_when_member_step_fails(self):
+        client = mock.Mock(remaining=100)
+        client.query.side_effect = CyqlError("kapot", "ApiKeyInvalid")
+        with mock.patch("apps.cyql.sync.sync_member_group") as group:
+            run_sync(client)
+        group.assert_not_called()
