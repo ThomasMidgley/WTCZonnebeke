@@ -34,7 +34,8 @@ import urllib.request
 
 CYQL = "https://api.cyql.app/api/graphql"
 GRAPH = "https://graph.microsoft.com/v1.0"
-NEWS_QUERY = "{ news(page: 1, pageSize: 5) { items { id title description publicationDate } } }"
+NEWS_QUERY = """query($page: Int) { news(page: $page, pageSize: 5) {
+  items { id title description publicationDate } totalCount hasNextPage } }"""
 HTML_TAG = re.compile(r"<(p|br|div|ul|ol|li|strong|b|em|i|a|h[1-6]|span)\b", re.IGNORECASE)
 
 
@@ -93,18 +94,30 @@ def main():
 
     print("== 1. Nieuws lezen uit Cyql")
     key = ask("CYQL_API_KEY", "Cyql API-sleutel", secret=True)
-    try:
-        body, headers = http("POST", CYQL, {"X-Api-Key": key}, data={"query": NEWS_QUERY})
-    except RuntimeError as exc:
-        sys.exit(f"Cyql gaf een fout {exc}")
-    if body.get("errors"):
-        sys.exit(f"Cyql gaf een fout: {body['errors'][0].get('message')}")
-    items = ((body.get("data") or {}).get("news") or {}).get("items") or []
+    # Cyql kan niet sorteren en geeft de oudste eerst: lees pagina 1 en de laatste pagina's, sorteer zelf.
+    def page(number):
+        try:
+            body, headers = http("POST", CYQL, {"X-Api-Key": key}, data={"query": NEWS_QUERY, "variables": {"page": number}})
+        except RuntimeError as exc:
+            sys.exit(f"Cyql gaf een fout {exc}")
+        if body.get("errors"):
+            sys.exit(f"Cyql gaf een fout: {body['errors'][0].get('message')}")
+        return (body.get("data") or {}).get("news") or {}, headers
+
+    first, headers = page(1)
+    items = list(first.get("items") or [])
+    if first.get("hasNextPage"):
+        last = max(1, -(-(first.get("totalCount") or 0) // 5))
+        for number in sorted({max(2, last - 1), last}):
+            result, headers = page(number)
+            items += result.get("items") or []
+    items = sorted({i["id"]: i for i in items if i.get("id")}.values(), key=lambda i: i.get("publicationDate") or "", reverse=True)[:5]
     remaining = headers.get("X-RateLimit-Remaining-Club")
     if remaining not in (None, "-1"):
         print(f"Resterend weekbudget Cyql: {remaining}")
     if not items:
         sys.exit("Cyql geeft geen actieve nieuwsberichten terug.")
+    print("Nieuwste eerst:")
     for number, item in enumerate(items, start=1):
         print(f"  {number}. {(item.get('publicationDate') or '')[:16].replace('T', ' ')}  {item.get('title')}")
     if not 1 <= args.bericht <= len(items):
