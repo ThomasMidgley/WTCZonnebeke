@@ -1,0 +1,136 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="Yql8_KbnurNXh5Eg8vSq">
+    <mxGraphModel dx="1460" dy="1295" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;fontSize=20;fontStyle=1;align=left;verticalAlign=middle;" value="Architectuur website op Raspberry Pi" vertex="1">
+          <mxGeometry height="40" width="700" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="users" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Users.svg;fontSize=14;labelPerimeter=1;" value="Bezoekers &amp;amp; leden&lt;br&gt;&lt;small&gt;webbrowser&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="80" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Device_Mobile.svg;fontSize=14;labelPerimeter=1;" value="Mobiele app&lt;br&gt;&lt;small&gt;stockbeheer&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="80" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="cfedge" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Brand_Cloudflare.svg;fontSize=14;labelPerimeter=1;" value="Cloudflare&lt;br&gt;&lt;small&gt;DNS · HTTPS&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="360" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="pi" parent="1" style="swimlane;startSize=26;html=1;fontSize=14;fillColor=#f5f5f5;strokeColor=#666666;" value="Raspberry Pi · Docker" vertex="1">
+          <mxGeometry height="250" width="480" x="230" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="docker" parent="pi" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Brand_Docker.svg;fontSize=14;labelPerimeter=1;" value="Docker" vertex="1">
+          <mxGeometry height="48" width="48" x="30" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="tunnel" parent="pi" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Plug_Connected.svg;fontSize=14;labelPerimeter=1;" value="Cloudflare Tunnel&lt;br&gt;&lt;small&gt;container · cloudflared&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="130" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="web" parent="pi" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/World_Www.svg;fontSize=14;labelPerimeter=1;" value="&lt;b&gt;Website&lt;/b&gt;&lt;br&gt;&lt;small&gt;container&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="330" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="portainer" parent="pi" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Layout_Dashboard.svg;fontSize=14;labelPerimeter=1;" value="Portainer&lt;br&gt;&lt;small&gt;containerbeheer&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="30" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="pi" source="tunnel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;verticalAlign=bottom;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;" target="web" value="intern">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cycl" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Bike.svg;fontSize=14;labelPerimeter=1;" value="Cycl SaaS-app&lt;br&gt;&lt;small&gt;leden · ritten · activiteiten&lt;br&gt;nieuwsberichten · klassement&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="847" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="pay" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Credit_Card.svg;fontSize=14;labelPerimeter=1;" value="Betalingsprovider&lt;br&gt;&lt;small&gt;Stripe / MultiSafepay&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="860" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="m365" parent="1" style="swimlane;startSize=26;html=1;fontSize=14;fillColor=#f5f5f5;strokeColor=#666666;" value="Microsoft 365&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;&amp;nbsp;" vertex="1">
+          <mxGeometry height="160" width="720" x="230" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="entra" parent="m365" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Shield_Lock.svg;fontSize=14;labelPerimeter=1;" value="Entra ID&lt;br&gt;&lt;small&gt;SSO-login&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="60" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="mail" parent="m365" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Mail.svg;fontSize=14;labelPerimeter=1;" value="Exchange Online&lt;br&gt;&lt;small&gt;mailing&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="240" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="group" parent="m365" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Users_Group.svg;fontSize=14;labelPerimeter=1;" value="M365-ledengroep&lt;br&gt;&lt;small&gt;mailinglijst&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="420" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="onedrive" parent="m365" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=default;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/tabler-outline/1/Brand_Onedrive.svg;fontSize=14;labelPerimeter=1;" value="OneDrive&lt;br&gt;&lt;small&gt;dataopslag (los van website)&lt;/small&gt;" vertex="1">
+          <mxGeometry height="48" width="48" x="610" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="text;html=1;fontSize=12;align=left;verticalAlign=middle;fontColor=#666666;" value="Doorlopende lijn = verkeer / API-call  ·  Stippellijn = losstaande opslag" vertex="1">
+          <mxGeometry height="30" width="600" x="230" y="780" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="users" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="cfedge" value="HTTPS">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="262" y="114" />
+              <mxPoint x="262" y="172" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="mobile" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;orthogonalLoop=1;jettySize=auto;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="cfedge" value="API">
+          <mxGeometry relative="1" x="-0.0397" as="geometry">
+            <Array as="points">
+              <mxPoint x="104" y="207.5" />
+              <mxPoint x="263.6" y="207.5" />
+              <mxPoint x="263.6" y="184" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="cfedge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;" target="tunnel" value="tunnel">
+          <mxGeometry relative="1" x="-0.4327" y="18" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;" target="cycl" value="API-calls">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="584" y="268" />
+              <mxPoint x="871" y="268" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=classic;labelBackgroundColor=default;defaultLabelBackgroundColor=page;verticalAlign=bottom;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;" target="pay" value="betalingen">
+          <mxGeometry relative="1" x="0.0441" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=1;exitDx=0;exitDy=0;" target="entra" value="SSO">
+          <mxGeometry relative="1" x="-0.0339" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="592" />
+              <mxPoint x="314" y="592" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" target="mail" value="mailing">
+          <mxGeometry relative="1" x="0.8007" y="-3" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="572" y="679" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;labelPlacement=auto;libavoidRouting=1;orthogonalLoop=1;jettySize=auto;" target="group" value="leden uit Cycl">
+          <mxGeometry relative="1" x="0.8747" y="19" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="591" y="679" />
+            </Array>
+            <mxPoint x="591.49" y="428.71" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="web" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=none;labelBackgroundColor=default;defaultLabelBackgroundColor=page;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="onedrive" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="608" y="552.3" />
+              <mxPoint x="864" y="552.3" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
