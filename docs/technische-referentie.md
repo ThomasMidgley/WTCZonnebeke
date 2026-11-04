@@ -232,6 +232,7 @@ Eenmalig instellen:
 4. App-registratie: de rechten GroupMember.Read.All, User.Read.All, User.Invite.All en GroupMember.ReadWrite.All toevoegen (zie hierboven) en **Grant admin consent for ...** (globale beheerder; geldt enkel voor deze app). Pas als er overal "Granted" staat, werkt het.
 5. Beheeromgeving > **Cyql** > *Instellingen* > *Ledengroep*: het adres van de groep, en bij *Enkel deze adressen (test)* eerst 2 of 3 eigen adressen. *Nu synchroniseren*, het verslag nakijken en een testmail sturen naar de groep vanuit Outlook.
 6. Komt de testmail aan, maak het testveld leeg. De volgende sync zet alle leden in de groep.
+7. Welkomstmail ("You've joined the ... group") uitschakelen, eenmalig in Exchange Online PowerShell: `Connect-ExchangeOnline -UserPrincipalName info@wtczonnebeke.be` en dan `Set-UnifiedGroup -Identity leden@wtczonnebeke.be -UnifiedGroupWelcomeMessageEnabled:$false`.
 
 Testen zonder Cyql-budget, in de console van de container (Portainer > container > *Console* > `/bin/sh`):
 
