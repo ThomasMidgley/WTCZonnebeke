@@ -254,9 +254,9 @@ python ledengroep_test.py leden@wtczonnebeke.be
 python ledengroep_test.py leden@wtczonnebeke.be --test-adres iemand@gmail.com --uitvoeren
 ```
 
-Nieuws naar de ledengroep (vinkje *Synchroniseer nieuws*): na de Cyql-stappen vraagt de sync `news(page: 1, pageSize: 10)` op (enkele punten budget; Cyql geeft enkel actieve berichten). Nieuwe berichten (tabel `cyql_newsitem`) gaan via de gewone mailroute (Graph, Mail.Send, vanuit de afzender in de instellingen) naar het groepsadres. Eerste keer en berichten ouder dan 7 dagen: enkel onthouden. Toekomstige publicatiedatum: overslaan tot dan. Mislukt de mail, dan probeert de volgende sync opnieuw. Code: `apps/cyql/news.py`.
+Nieuws naar de ledengroep (vinkje *Synchroniseer nieuws*): na de Cyql-stappen leest de sync de nieuwste berichten (Cyql geeft enkel actieve berichten, de oudste eerst en zonder sorteeroptie; daarom pagina 1 plus de laatste twee pagina's van `news`, zelf gesorteerd: hooguit 3 kleine vragen). Nieuwe berichten (tabel `cyql_newsitem`) gaan via de gewone mailroute (Graph, Mail.Send, vanuit de afzender in de instellingen) naar het groepsadres. Eerste keer en berichten ouder dan 7 dagen: enkel onthouden. Toekomstige publicatiedatum: overslaan tot dan. Mislukt de mail, dan probeert de volgende sync opnieuw. Code: `apps/cyql/news.py`.
 
-Los testen met `scripts/nieuws_test.py` (enkel Python 3): leest de 5 laatste berichten uit Cyql (vraagt CYQL\_API\_KEY), toont hoe de mail eruit ziet en verstuurt hem pas met `--verstuur` (vraagt dan de Azure-gegevens en de afzender).
+Los testen met `scripts/nieuws_test.py` (enkel Python 3): leest de 5 nieuwste berichten uit Cyql (nieuwste eerst) (vraagt CYQL\_API\_KEY), toont hoe de mail eruit ziet en verstuurt hem pas met `--verstuur` (vraagt dan de Azure-gegevens en de afzender).
 
 ```
 python nieuws_test.py leden@wtczonnebeke.be                       # tonen, niets versturen

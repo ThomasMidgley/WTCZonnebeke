@@ -580,3 +580,20 @@ class NewsTests(TestCase):
             run = run_sync(client)
         news.assert_called_once()
         self.assertIn("nieuws: geen nieuwe berichten", run.message)
+
+    def test_latest_news_reads_last_pages_newest_first(self):
+        from .news import latest_news
+
+        items = [self.item(n, days_ago=30 - n) for n in range(1, 26)]  # oudste eerst, zoals Cyql
+
+        def query(_query, variables):
+            page = variables["page"]
+            chunk = items[(page - 1) * 10 : page * 10]
+            return {"news": {"items": chunk, "totalCount": len(items), "hasNextPage": page * 10 < len(items)}}
+
+        client = mock.Mock()
+        client.query.side_effect = query
+        result = latest_news(client)
+        self.assertEqual(result[0]["title"], "Bericht 25")
+        self.assertEqual(len(result), 25)
+        self.assertEqual(client.query.call_count, 3)
