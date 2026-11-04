@@ -232,7 +232,11 @@ Eenmalig instellen:
 4. App-registratie: de rechten GroupMember.Read.All, User.Read.All, User.Invite.All en GroupMember.ReadWrite.All toevoegen (zie hierboven) en **Grant admin consent for ...** (globale beheerder; geldt enkel voor deze app). Pas als er overal "Granted" staat, werkt het.
 5. Beheeromgeving > **Cyql** > *Instellingen* > *Ledengroep*: het adres van de groep, en bij *Enkel deze adressen (test)* eerst 2 of 3 eigen adressen. *Nu synchroniseren*, het verslag nakijken en een testmail sturen naar de groep vanuit Outlook.
 6. Komt de testmail aan, maak het testveld leeg. De volgende sync zet alle leden in de groep.
-7. Welkomstmail ("You've joined the ... group") uitschakelen, eenmalig in Exchange Online PowerShell: `Connect-ExchangeOnline -UserPrincipalName info@wtczonnebeke.be` en dan `Set-UnifiedGroup -Identity leden@wtczonnebeke.be -UnifiedGroupWelcomeMessageEnabled:$false`.
+7. Welkomstmail ("You've joined the ... group") uitschakelen. Dat kan niet in het admin center, enkel in Exchange Online PowerShell, eenmalig per groep (geldt voor de groep, niet voor het domein):
+   - Windows: startmenu, "PowerShell", rechtermuisknop, *Als administrator uitvoeren*.
+   - `Install-Module ExchangeOnlineManagement` (eenmalig; melding over scripts: eerst `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`).
+   - `Connect-ExchangeOnline -UserPrincipalName info@wtczonnebeke.be` (aanmeldvenster van Microsoft, globale beheerder).
+   - `Set-UnifiedGroup -Identity leden@wtczonnebeke.be -UnifiedGroupWelcomeMessageEnabled:$false`
 
 Testen zonder Cyql-budget, in de console van de container (Portainer > container > *Console* > `/bin/sh`):
 
@@ -497,6 +501,7 @@ Voorbereiding vanaf 1 december 2026, live op 1 januari 2027.
 - [ ] Clubreglement goedgekeurd door het bestuur
 - [ ] Lidgeld: prijsverhoging op 1 december gezet
 - [ ] A4-handleiding voor bestuur en stockbeheerder
+- [ ] Ledengroep: krijgt de groep een adres op het nieuwe domein, pas het dan aan onder Cyql > Instellingen > Ledengroep (de welkomstmail blijft uit; enkel een nieuwe groep heeft stap 7 van *Ledengroep* opnieuw nodig)
 
 ### Op de dag zelf
 
