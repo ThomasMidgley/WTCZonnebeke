@@ -76,6 +76,16 @@ def wanted_members(settings):
     return {member.email.lower(): str(member) for member in Member.objects.exclude(email="")}
 
 
+def token_roles(token=None):
+    """De rechten (roles) die Microsoft echt in het token van de app zet. Enkel om te controleren."""
+    import base64
+    import json
+
+    payload = (token or graph_token()).split(".")[1]
+    data = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    return sorted(data.get("roles", [])), data.get("tid", ""), data.get("app_displayname", "")
+
+
 def find_group(graph, address):
     groups = graph.get_all("/groups", {"$filter": f"mail eq '{address.replace(chr(39), '')}'", "$select": "id"}, "groep opzoeken")
     if not groups:
@@ -87,10 +97,11 @@ def user_addresses(user):
     return {address.lower() for address in [user.get("mail"), *(user.get("otherMails") or [])] if address}
 
 
-def sync_member_group(graph=None, deadline=None):
+def sync_member_group(graph=None, deadline=None, dry_run=False):
     """Werkt de groep bij en geeft een korte samenvatting voor het verslag.
 
     `deadline` (time.monotonic) beperkt hoe lang we toevoegen; wat niet lukt, volgt bij de volgende sync.
+    `dry_run`: enkel lezen en tellen wat er zou gebeuren, niets wijzigen.
     """
     settings = CyqlApp.load()
     if not settings.member_group:
@@ -116,6 +127,12 @@ def sync_member_group(graph=None, deadline=None):
 
     to_add = sorted(set(wanted) - present)
     to_remove = [guest for guest in guests if not user_addresses(guest) & set(wanted)]
+    if dry_run:
+        return (
+            f"{len(users)} groepsleden ({len(guests)} gasten, {unreadable} onleesbaar), {len(wanted)} adressen gewenst, "
+            f"zou toevoegen: {', '.join(to_add) or 'niemand'}; zou verwijderen: "
+            f"{', '.join(sorted(a for g in to_remove for a in user_addresses(g))) or 'niemand'}"
+        )
 
     added, failed, postponed = 0, [], 0
     for index, email in enumerate(to_add):

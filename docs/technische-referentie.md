@@ -232,6 +232,27 @@ Eenmalig instellen:
 4. App-registratie: de rechten GroupMember.Read.All, User.Read.All, User.Invite.All en GroupMember.ReadWrite.All toevoegen (zie hierboven) en **Grant admin consent for ...** (globale beheerder; geldt enkel voor deze app). Pas als er overal "Granted" staat, werkt het.
 5. Beheeromgeving > **Cyql** > *Instellingen* > *Ledengroep*: het adres van de groep, en bij *Enkel deze adressen (test)* eerst 2 of 3 eigen adressen. *Nu synchroniseren*, het verslag nakijken en een testmail sturen naar de groep vanuit Outlook.
 6. Komt de testmail aan, maak het testveld leeg. De volgende sync zet alle leden in de groep.
+7. Welkomstmail ("You've joined the ... group") uitschakelen. Dat kan niet in het admin center, enkel in Exchange Online PowerShell, eenmalig per groep (geldt voor de groep, niet voor het domein):
+   - Windows: startmenu, "PowerShell", rechtermuisknop, *Als administrator uitvoeren*.
+   - `Install-Module ExchangeOnlineManagement` (eenmalig; melding over scripts: eerst `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`).
+   - `Connect-ExchangeOnline -UserPrincipalName info@wtczonnebeke.be` (aanmeldvenster van Microsoft, globale beheerder).
+   - `Set-UnifiedGroup -Identity leden@wtczonnebeke.be -UnifiedGroupWelcomeMessageEnabled:$false`
+
+Testen zonder Cyql-budget, in de console van de container (Portainer > container > *Console* > `/bin/sh`):
+
+```
+python manage.py ledengroep              # controle: rechten in het token, groep, wat er zou gebeuren; wijzigt niets
+python manage.py ledengroep --uitvoeren  # de groep echt bijwerken met de ledenlijst die al in de database staat
+```
+
+De controle toont welke rechten Microsoft echt aan de app geeft. Staat een recht in Entra maar niet in het token, dan is het meestal als *Delegated* in plaats van *Application* toegevoegd, of ontbreekt de admin consent nog.
+
+Los van de website kan het ook met `scripts/ledengroep_test.py` (enkel Python 3, geen extra pakketten). Het vraagt tenant-ID, client-ID en geheim (of leest AZURE\_TENANT\_ID, AZURE\_CLIENT\_ID en AZURE\_CLIENT\_SECRET), toont de rechten in het token, zoekt de groep op en toont de leden. Met `--test-adres iemand@voorbeeld.be --uitvoeren` voegt het één adres als gast toe aan de groep.
+
+```
+python ledengroep_test.py leden@wtczonnebeke.be
+python ledengroep_test.py leden@wtczonnebeke.be --test-adres iemand@gmail.com --uitvoeren
+```
 
 Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent dat een recht of de admin consent ontbreekt; het verslag zegt bij welke stap (groep opzoeken, groepsleden lezen, gast aanmaken, toevoegen). Leden van wie de app het adres niet kan lezen, worden nooit uit de groep gehaald. GroupMember.ReadWrite.All geldt technisch voor alle groepen van de tenant; Microsoft laat geen beperking tot één groep toe. De website raakt enkel de ingestelde groep aan, en daarin enkel gasten.
 
@@ -480,6 +501,7 @@ Voorbereiding vanaf 1 december 2026, live op 1 januari 2027.
 - [ ] Clubreglement goedgekeurd door het bestuur
 - [ ] Lidgeld: prijsverhoging op 1 december gezet
 - [ ] A4-handleiding voor bestuur en stockbeheerder
+- [ ] Ledengroep: krijgt de groep een adres op het nieuwe domein, pas het dan aan onder Cyql > Instellingen > Ledengroep (de welkomstmail blijft uit; enkel een nieuwe groep heeft stap 7 van *Ledengroep* opnieuw nodig)
 
 ### Op de dag zelf
 
