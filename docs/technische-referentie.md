@@ -254,6 +254,15 @@ python ledengroep_test.py leden@wtczonnebeke.be
 python ledengroep_test.py leden@wtczonnebeke.be --test-adres iemand@gmail.com --uitvoeren
 ```
 
+Nieuws naar de ledengroep (vinkje *Synchroniseer nieuws*): na de Cyql-stappen vraagt de sync `news(page: 1, pageSize: 10)` op (enkele punten budget; Cyql geeft enkel actieve berichten). Nieuwe berichten (tabel `cyql_newsitem`) gaan via de gewone mailroute (Graph, Mail.Send, vanuit de afzender in de instellingen) naar het groepsadres. Eerste keer en berichten ouder dan 7 dagen: enkel onthouden. Toekomstige publicatiedatum: overslaan tot dan. Mislukt de mail, dan probeert de volgende sync opnieuw. Code: `apps/cyql/news.py`.
+
+Los testen met `scripts/nieuws_test.py` (enkel Python 3): leest de 5 laatste berichten uit Cyql (vraagt CYQL\_API\_KEY), toont hoe de mail eruit ziet en verstuurt hem pas met `--verstuur` (vraagt dan de Azure-gegevens en de afzender).
+
+```
+python nieuws_test.py leden@wtczonnebeke.be                       # tonen, niets versturen
+python nieuws_test.py leden@wtczonnebeke.be --bericht 1 --afzender info@wtczonnebeke.be --verstuur
+```
+
 Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent dat een recht of de admin consent ontbreekt; het verslag zegt bij welke stap (groep opzoeken, groepsleden lezen, gast aanmaken, toevoegen). Leden van wie de app het adres niet kan lezen, worden nooit uit de groep gehaald. GroupMember.ReadWrite.All geldt technisch voor alle groepen van de tenant; Microsoft laat geen beperking tot één groep toe. De website raakt enkel de ingestelde groep aan, en daarin enkel gasten.
 
 ### Wie mag binnen

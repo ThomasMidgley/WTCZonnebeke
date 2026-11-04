@@ -84,7 +84,7 @@ Alles wat op meerdere pagina's terugkomt (adres, kleuren, sponsors) stel je éé
 
 | Instelling | Wat je er doet |
 | --- | --- |
-| Huisstijl | Basiskleur en accentkleur (HEX-code, bv. #FF5200) en het logo. De basiskleur kleurt de strook met logo en menu bovenaan en de voettekst. Is wit daarop slecht leesbaar, dan wordt de tekst automatisch zwart. Het logo (SVG of PNG met transparante achtergrond) staat bovenaan op de website en in de stock-app; kies een versie die leesbaar is op de basiskleur. Laat je het leeg, dan toont de website het standaardlogo in een lichte of donkere versie. |
+| Huisstijl | Basiskleur en accentkleur (HEX-code, bv. #FF5200) en het logo. De basiskleur kleurt de strook met logo en menu bovenaan en de voettekst. Over de foto bovenaan de hoofdpagina ligt altijd een witte, doorzichtige laag met donkere tekst, los van de basiskleur. Is wit daarop slecht leesbaar, dan wordt de tekst automatisch zwart. Het logo (SVG of PNG met transparante achtergrond) staat bovenaan op de website en in de stock-app; kies een versie die leesbaar is op de basiskleur. Laat je het leeg, dan toont de website het standaardlogo in een lichte of donkere versie. |
 | Clubgegevens | Naam vzw, adres, ondernemingsnummer, IBAN, e-mail, telefoon, links naar Facebook, Strava en de privacyverklaring. Komt in de voettekst. |
 | Clubreglement | De pdf om te downloaden op de pagina Clubreglement. |
 | Statuten | Link naar de vzw-statuten. |
@@ -337,6 +337,7 @@ Het adres van de ledengroep (bv. leden@wtczonnebeke.be) is een groep in Microsof
 - *Enkel deze adressen (test)*: vul je hier een paar adressen in, dan bevat de groep alleen die adressen. Maak het veld leeg om alle leden op te nemen.
 - Zijn er veel nieuwe leden tegelijk (bv. de eerste keer), dan zet **Nu synchroniseren** er zoveel bij als in een halve minuut lukt; de rest volgt 's nachts.
 - Zou de groep in één keer meer dan de helft van de leden verliezen, dan doet de website dat niet en meldt ze het in het verslag. Controleer dan de ledenlijst in Cyql.
+- *Synchroniseer nieuws*: aangevinkt leest de website bij elke sync ook de actieve nieuwsberichten uit de Cyql-app. Een nieuw bericht wordt na de sync gemaild naar de ledengroep: de titel is het onderwerp, de beschrijving de tekst. Elk bericht wordt maar één keer gemaild; een later aangepast bericht niet opnieuw. De eerste keer na het aanvinken onthoudt de website de bestaande berichten zonder ze te mailen, en een bericht dat al meer dan een week oud is, wordt ook niet meer gemaild. Een bericht met een publicatiedatum in de toekomst volgt pas na die datum. Het verslag staat bij **Synchronisaties** (regel *nieuws*).
 
 Volledige namen op het klassement: open **Pagina's** > **Klassement** en vink *Volledige namen tonen* aan. Standaard toont de site enkel voornaam en initiaal.
 
