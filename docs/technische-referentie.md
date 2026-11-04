@@ -242,6 +242,13 @@ python manage.py ledengroep --uitvoeren  # de groep echt bijwerken met de ledenl
 
 De controle toont welke rechten Microsoft echt aan de app geeft. Staat een recht in Entra maar niet in het token, dan is het meestal als *Delegated* in plaats van *Application* toegevoegd, of ontbreekt de admin consent nog.
 
+Los van de website kan het ook met `scripts/ledengroep_test.py` (enkel Python 3, geen extra pakketten). Het vraagt tenant-ID, client-ID en geheim (of leest AZURE\_TENANT\_ID, AZURE\_CLIENT\_ID en AZURE\_CLIENT\_SECRET), toont de rechten in het token, zoekt de groep op en toont de leden. Met `--test-adres iemand@voorbeeld.be --uitvoeren` voegt het één adres als gast toe aan de groep.
+
+```
+python ledengroep_test.py leden@wtczonnebeke.be
+python ledengroep_test.py leden@wtczonnebeke.be --test-adres iemand@gmail.com --uitvoeren
+```
+
 Beveiligingen: de groep wordt enkel bijgewerkt met een ledenlijst die bij dezelfde sync gelukt is; een lege lijst verwijdert niemand en meer dan de helft in één keer evenmin. In de beheerpagina stopt het toevoegen na 30 seconden (Gunicorn-limiet), 's nachts is er geen limiet. Foutmelding 403 in het verslag betekent dat een recht of de admin consent ontbreekt; het verslag zegt bij welke stap (groep opzoeken, groepsleden lezen, gast aanmaken, toevoegen). Leden van wie de app het adres niet kan lezen, worden nooit uit de groep gehaald. GroupMember.ReadWrite.All geldt technisch voor alle groepen van de tenant; Microsoft laat geen beperking tot één groep toe. De website raakt enkel de ingestelde groep aan, en daarin enkel gasten.
 
 ### Wie mag binnen
