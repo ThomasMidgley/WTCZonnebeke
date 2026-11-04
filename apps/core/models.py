@@ -235,13 +235,23 @@ class CyqlApp(BaseGenericSetting):
         "leden. Handig om eerst met een paar adressen te testen; maak leeg om alle leden op te nemen.",
     )
 
+    sync_news = models.BooleanField(
+        "synchroniseer nieuws",
+        default=False,
+        help_text="Aangevinkt: bij elke Cyql-sync leest de website ook de actieve nieuwsberichten uit de app. "
+        "Een nieuw bericht wordt na de sync gemaild naar het adres van de ledengroep, met de titel als onderwerp "
+        "en de beschrijving als tekst. De eerste keer worden de bestaande berichten enkel onthouden, niet gemaild.",
+    )
+
     panels = [
         HelpPanel(content="<p>De API-sleutel staat niet hier maar in Portainer als <code>CYQL_API_KEY</code>.</p>"),
         FieldPanel("sync_time"),
         FieldPanel("invite_link"),
         FieldPanel("event_url"),
         FieldPanel("widget_code"),
-        MultiFieldPanel([FieldPanel("member_group"), FieldPanel("member_group_test")], heading="Ledengroep"),
+        MultiFieldPanel(
+            [FieldPanel("member_group"), FieldPanel("member_group_test"), FieldPanel("sync_news")], heading="Ledengroep"
+        ),
     ]
 
     class Meta:

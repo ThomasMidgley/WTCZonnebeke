@@ -21,6 +21,7 @@ from apps.core.models import CyqlApp
 from .client import CyqlClient, CyqlError
 from .member_group import sync_member_group
 from .models import Challenge, ChallengeScore, ClubEvent, ClubStats, Member, Ride, SyncRun
+from .news import sync_news
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +182,7 @@ def run_sync(client=None, group_seconds=None):
     """`group_seconds` beperkt hoe lang de ledengroep mag duren (in de beheerpagina); 's nachts geen limiet."""
     client = client or CyqlClient()
     run = SyncRun.objects.create()
-    lines, ok, members_ok = [], True, False
+    lines, ok, members_ok, fatal = [], True, False, False
     for label, step in STEPS:
         try:
             lines.append(f"{label}: {step(client)}")
@@ -191,6 +192,7 @@ def run_sync(client=None, group_seconds=None):
             lines.append(f"{label}: mislukt ({exc.code}: {exc})")
             logger.warning("Cyql-sync %s mislukt: %s %s", label, exc.code, exc)
             if exc.code in FATAL:
+                fatal = True
                 break
     if members_ok and CyqlApp.load().member_group:
         # Enkel met een vers opgehaalde ledenlijst, anders zouden we leden onterecht verwijderen.
@@ -201,6 +203,16 @@ def run_sync(client=None, group_seconds=None):
             ok = False
             lines.append(f"ledengroep: mislukt ({exc})")
             logger.exception("Ledengroep bijwerken mislukt")
+    settings = CyqlApp.load()
+    if settings.sync_news and settings.member_group and not fatal:
+        try:
+            summary, news_ok = sync_news(client)
+            lines.append(f"nieuws: {summary}")
+            ok = ok and news_ok
+        except CyqlError as exc:
+            ok = False
+            lines.append(f"nieuws: mislukt ({exc.code}: {exc})")
+            logger.warning("Cyql-sync nieuws mislukt: %s %s", exc.code, exc)
     run.ok = ok
     run.message = "\n".join(lines)
     run.remaining_budget = client.remaining

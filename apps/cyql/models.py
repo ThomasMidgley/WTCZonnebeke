@@ -146,3 +146,21 @@ class Member(models.Model):
     @classmethod
     def is_member(cls, email):
         return bool(email) and cls.objects.filter(email__iexact=email.strip()).exists()
+
+
+class NewsItem(models.Model):
+    """Een nieuwsbericht uit Cyql dat de website al gezien heeft, zodat het maar één keer gemaild wordt."""
+
+    cyql_id = models.UUIDField(unique=True)
+    title = models.CharField("titel", max_length=255)
+    published_at = models.DateTimeField("gepubliceerd", null=True, blank=True)
+    seen_at = models.DateTimeField("eerst gezien", auto_now_add=True)
+    mailed_at = models.DateTimeField("gemaild", null=True, blank=True)
+
+    class Meta:
+        ordering = ["-published_at"]
+        verbose_name = "nieuwsbericht"
+        verbose_name_plural = "nieuwsberichten"
+
+    def __str__(self):
+        return self.title

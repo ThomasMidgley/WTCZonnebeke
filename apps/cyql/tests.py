@@ -472,3 +472,111 @@ class MemberGroupCommandTests(TestCase):
         self.assertIn("Ontbreekt in het token: GroupMember.Read.All", err.getvalue())
         self.assertIn("zou toevoegen: nieuw@example.com; zou verwijderen: oud@example.com", out.getvalue())
         self.assertEqual(graph.calls, [])  # niets gewijzigd
+
+
+class NewsTests(TestCase):
+    """Nieuwe Cyql-berichten gaan één keer naar de ledengroep."""
+
+    def setUp(self):
+        settings = CyqlApp.load()
+        settings.member_group = "leden@club.test"
+        settings.sync_news = True
+        settings.save()
+        self.now = timezone.now()
+
+    def client_with(self, *items):
+        client = mock.Mock(remaining=None)
+        client.query.return_value = {"news": {"items": list(items)}}
+        return client
+
+    def item(self, number, days_ago=0, description="Tekst"):
+        return {
+            "id": f"00000000-0000-0000-0000-{number:012d}",
+            "title": f"Bericht {number}",
+            "description": description,
+            "publicationDate": (self.now - datetime.timedelta(days=days_ago)).isoformat(),
+        }
+
+    def test_first_run_only_remembers(self):
+        from django.core import mail
+
+        from .models import NewsItem
+        from .news import sync_news
+
+        summary, ok = sync_news(self.client_with(self.item(1), self.item(2)), now=self.now)
+        self.assertTrue(ok)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(NewsItem.objects.count(), 2)
+        self.assertIn("eerste keer", summary)
+
+    def test_new_item_mailed_once_to_group(self):
+        from django.core import mail
+
+        from .news import sync_news
+
+        sync_news(self.client_with(self.item(1)), now=self.now)
+        client = self.client_with(self.item(2, description="<p>Rit <b>zondag</b></p><p>Tot dan</p>"), self.item(1))
+        summary, ok = sync_news(client, now=self.now)
+        sync_news(client, now=self.now)
+        self.assertTrue(ok)
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.subject, "Bericht 2")
+        self.assertEqual(message.to, ["leden@club.test"])
+        self.assertIn("Rit zondag", message.body)
+        self.assertNotIn("<p>", message.body)
+        self.assertIn("<b>zondag</b>", message.alternatives[0][0])
+        self.assertIn("gemaild naar leden@club.test: Bericht 2", summary)
+
+    def test_plain_text_description_becomes_paragraphs(self):
+        from .news import mail_parts
+
+        text, body = mail_parts("Eerste regel\nzelfde alinea\n\nTweede <alinea>")
+        self.assertEqual(text, "Eerste regel\nzelfde alinea\n\nTweede <alinea>")
+        self.assertEqual(body, "<p>Eerste regel<br>zelfde alinea</p><p>Tweede &lt;alinea&gt;</p>")
+
+    def test_old_and_future_items_not_mailed(self):
+        from django.core import mail
+
+        from .models import NewsItem
+        from .news import sync_news
+
+        sync_news(self.client_with(self.item(1)), now=self.now)
+        future = self.item(3)
+        future["publicationDate"] = (self.now + datetime.timedelta(days=1)).isoformat()
+        sync_news(self.client_with(self.item(2, days_ago=30), future), now=self.now)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertTrue(NewsItem.objects.filter(title="Bericht 2", mailed_at=None).exists())
+        self.assertFalse(NewsItem.objects.filter(title="Bericht 3").exists())
+
+    def test_failed_mail_is_retried(self):
+        from django.core import mail
+
+        from .news import sync_news
+
+        sync_news(self.client_with(self.item(1)), now=self.now)
+        with mock.patch("apps.cyql.news.send_news_mail", side_effect=RuntimeError("Graph weg")):
+            summary, ok = sync_news(self.client_with(self.item(2)), now=self.now)
+        self.assertFalse(ok)
+        self.assertIn("mail mislukt", summary)
+        sync_news(self.client_with(self.item(2)), now=self.now)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_off_without_checkbox(self):
+        from .news import sync_news
+
+        settings = CyqlApp.load()
+        settings.sync_news = False
+        settings.save()
+        client = self.client_with(self.item(1))
+        self.assertEqual(sync_news(client), ("niet ingesteld", True))
+        client.query.assert_not_called()
+
+    def test_run_sync_reports_news(self):
+        client = mock.Mock(remaining=None)
+        client.query.return_value = {}
+        with mock.patch("apps.cyql.sync.sync_member_group", return_value="ok"), \
+             mock.patch("apps.cyql.sync.sync_news", return_value=("geen nieuwe berichten", True)) as news:
+            run = run_sync(client)
+        news.assert_called_once()
+        self.assertIn("nieuws: geen nieuwe berichten", run.message)
