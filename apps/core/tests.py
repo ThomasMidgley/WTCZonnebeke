@@ -100,6 +100,23 @@ class SiteTests(TestCase):
         self.assertIn('href="https://www.postmill.be"', html)
         self.assertIn("© WTC Zonnebeke vzw", html)
 
+    def test_footer_links_to_chosen_documents(self):
+        from django.core.files.base import ContentFile
+        from wagtail.documents import get_document_model
+
+        from apps.core.models import Links
+
+        html = self.client.get("/").content.decode()
+        self.assertNotIn("Privacyverklaring</a>", html)
+        Document = get_document_model()
+        links = Links.load()
+        links.statuten = Document.objects.create(title="Statuten", file=ContentFile(b"pdf", name="statuten.pdf"))
+        links.privacy = Document.objects.create(title="Privacy", file=ContentFile(b"pdf", name="privacy.pdf"))
+        links.save()
+        html = self.client.get("/").content.decode()
+        self.assertIn(f'href="{links.statuten.url}">Statuten</a>', html)
+        self.assertIn(f'href="{links.privacy.url}">Privacyverklaring</a>', html)
+
     def test_social_logos_on_home(self):
         html = self.client.get("/").content.decode()
         social = html[html.index('class="social"'):]

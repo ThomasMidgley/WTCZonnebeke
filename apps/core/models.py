@@ -135,7 +135,6 @@ class Clubgegevens(BaseGenericSetting):
     meeting_place = models.CharField("vertrekplaats clubritten", max_length=200, blank=True)
     facebook_url = models.URLField("Facebook", blank=True)
     strava_url = models.URLField("Strava", blank=True)
-    privacy_url = models.URLField("privacyverklaring", blank=True)
 
     panels = [
         MultiFieldPanel(
@@ -148,8 +147,8 @@ class Clubgegevens(BaseGenericSetting):
             heading="Contact",
         ),
         MultiFieldPanel(
-            [FieldPanel("facebook_url"), FieldPanel("strava_url"), FieldPanel("privacy_url")],
-            heading="Links",
+            [FieldPanel("facebook_url"), FieldPanel("strava_url")],
+            heading="Sociale media",
         ),
     ]
 
@@ -185,13 +184,32 @@ class Clubreglement(BaseGenericSetting):
 
 
 @register_setting(icon="link-external", order=40)
-class Statuten(BaseGenericSetting):
-    url = models.URLField("link naar de vzw-statuten", blank=True)
+class Links(BaseGenericSetting):
+    """Documenten die onderaan elke pagina gelinkt worden."""
 
-    panels = [FieldPanel("url")]
+    statuten = models.ForeignKey(
+        "wagtaildocs.Document",
+        verbose_name="vzw-statuten",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="Kies of upload het document. Leeg: geen link in de voettekst.",
+    )
+    privacy = models.ForeignKey(
+        "wagtaildocs.Document",
+        verbose_name="privacyverklaring",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="Kies of upload het document. Leeg: geen link in de voettekst.",
+    )
+
+    panels = [FieldPanel("statuten"), FieldPanel("privacy")]
 
     class Meta:
-        verbose_name = "vzw-statuten"
+        verbose_name = "links"
 
 
 @register_setting(icon="resubmit", order=50)
