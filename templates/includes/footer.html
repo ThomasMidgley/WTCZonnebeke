@@ -14,8 +14,10 @@
       <ul>
         {% if club.enterprise_number %}<li>Ondernemingsnr. {{ club.enterprise_number }}{% if club.rpr %}, RPR {{ club.rpr }}{% endif %}</li>{% endif %}
         {% if club.iban %}<li>Rekening {{ club.iban }}</li>{% endif %}
-        {% if settings.core.Statuten.url %}<li><a href="{{ settings.core.Statuten.url }}">Statuten</a></li>{% endif %}
-        {% if club.privacy_url %}<li><a href="{{ club.privacy_url }}">Privacyverklaring</a></li>{% endif %}
+        {% with links=settings.core.Links %}
+          {% if links.statuten %}<li><a href="{{ links.statuten.url }}">Statuten</a></li>{% endif %}
+          {% if links.privacy %}<li><a href="{{ links.privacy.url }}">Privacyverklaring</a></li>{% endif %}
+        {% endwith %}
       </ul>
     </div>
     <p class="legal">Webdesign door <a href="https://www.postmill.be" rel="noopener">Post Mill</a> · © WTC Zonnebeke vzw</p>

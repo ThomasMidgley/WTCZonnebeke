@@ -81,7 +81,7 @@ class ClubEvent(models.Model):
 class Challenge(models.Model):
     """Klassement (challenge) in Cyql. Beheerders kiezen welke op de website komen."""
 
-    SCORE_UNITS = {"DISTANCE": "km", "SCORE": "punten", "NUMBER_OF_RIDES": "ritten"}
+    SCORE_UNITS = {"DISTANCE": "km", "SCORE": "score", "NUMBER_OF_RIDES": "ritten"}
 
     cyql_id = models.UUIDField(unique=True)
     title = models.CharField("titel", max_length=255)

@@ -392,7 +392,7 @@ Niet-geheime instellingen staan in Wagtail, onder **Instellingen**, en zitten du
 | --- | --- |
 | Huisstijl | Basis- en accentkleur en logo (bewaard in /data/media/huisstijl/). De tekstkleur op de basiskleur wordt automatisch wit of zwart. Een SVG met scripts wordt geweigerd. |
 | Clubgegevens | Naam vzw, adres, ondernemingsnummer, IBAN, e-mail, telefoon |
-| Clubreglement, Vzw-statuten | Teksten |
+| Clubreglement, Links (statuten en privacyverklaring) | Documenten |
 | Integraties | Azure tenant- en client-ID (env heeft voorrang), afzender mails, Stripe publieke sleutel |
 | Toegang | Beheerders en stockbeheerders (e-mailadressen) |
 | QR-info pijltjes | Inhoud van /index.php?id=900 (adres in de QR-codes, **nooit wijzigen**) |

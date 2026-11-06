@@ -85,9 +85,9 @@ Alles wat op meerdere pagina's terugkomt (adres, kleuren, sponsors) stel je éé
 | Instelling | Wat je er doet |
 | --- | --- |
 | Huisstijl | Basiskleur en accentkleur (HEX-code, bv. #FF5200) en het logo. De basiskleur kleurt de strook met logo en menu bovenaan en de voettekst. Over de foto bovenaan de hoofdpagina ligt altijd een witte, doorzichtige laag met donkere tekst, los van de basiskleur. Is wit daarop slecht leesbaar, dan wordt de tekst automatisch zwart. Het logo (SVG of PNG met transparante achtergrond) staat bovenaan op de website en in de stock-app; kies een versie die leesbaar is op de basiskleur. Laat je het leeg, dan toont de website het standaardlogo in een lichte of donkere versie. |
-| Clubgegevens | Naam vzw, adres, ondernemingsnummer, IBAN, e-mail, telefoon, links naar Facebook, Strava en de privacyverklaring. Komt in de voettekst. |
+| Clubgegevens | Naam vzw, adres, ondernemingsnummer, IBAN, e-mail, telefoon, links naar Facebook en Strava. Komt in de voettekst. |
 | Clubreglement | De pdf om te downloaden op de pagina Clubreglement. |
-| Statuten | Link naar de vzw-statuten. |
+| Links | De vzw-statuten en de privacyverklaring: kies per item een document uit **Documenten** (of upload er een). Ze komen als link in de voettekst; leeg = geen link. Een nieuwe versie: upload het nieuwe document en kies het hier, of vervang het bestand bij **Documenten**. |
 | Toegang | Wie beheerder is en wie stockbeheerder (één e-mailadres per lijn). Stockbeheerders krijgen ook de mail bij een nieuwe bestelling. |
 | QR-info | De pagina achter de QR-codes op de pijltjes: titel, evenement, datum, verantwoordelijke en gsm-nummers. **Zet hier voor elke tocht de juiste datum.** |
 | Sponsors | Naam, logo, website, hoofdsponsor ja/nee en volgorde. Hoofdsponsors staan op de home. |
@@ -319,7 +319,7 @@ De clubkalender, de klassementen en de ledenlijst komen elke nacht automatisch u
 
 In het menu **Cyql** (enkel voor beheerders):
 
-- **Klassementen**: vink *tonen op de website* aan voor de klassementen die op de pagina Klassement komen, en kies de volgorde. Elk getoond klassement kost API-budget, dus toon enkel wat nodig is. De kolommen volgen het soort klassement in Cyql: een klassement op afstand toont km en ritten, een klassement op aantal ritten enkel de ritten. Cyql geeft per lid geen kilometers voor een klassement op ritten; wil je kilometers, stel het klassement in Cyql in op afstand.
+- **Klassementen**: vink *tonen op de website* aan voor de klassementen die op de pagina Klassement komen, en kies de volgorde. Elk getoond klassement kost API-budget, dus toon enkel wat nodig is. De kolommen volgen het soort klassement in Cyql: eerst het aantal ritten, daarna de score (bij score per rit), de km (bij afstand). Een klassement op aantal ritten toont enkel de ritten. Cyql geeft per lid geen kilometers voor een klassement op ritten; wil je kilometers, stel het klassement in Cyql in op afstand.
 - **Leden**: de goedgekeurde leden uit Cyql. De webshop gebruikt deze lijst voor *enkel voor leden*. Een nieuw lid kan pas kledij kopen na goedkeuring in Cyql en de volgende nachtelijke synchronisatie.
 - **Synchronisaties**: het verslag van elke nacht, met het resterende weekbudget.
 - **Nu synchroniseren**: meteen alles ophalen, bv. net na het goedkeuren van een nieuw lid. Gebruik dit spaarzaam: Cyql geeft de club een beperkt budget per week (reset op maandag).

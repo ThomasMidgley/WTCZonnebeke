@@ -12,14 +12,14 @@
       {% with scores=challenge.scores.all %}
         {% if scores %}
           <table>
-            <thead><tr><th scope="col">#</th><th scope="col">Naam</th><th scope="col" class="num">{{ challenge.unit|default:"Score"|capfirst }}</th>{% if challenge.show_ride_count %}<th scope="col" class="num">Ritten</th>{% endif %}</tr></thead>
+            <thead><tr><th scope="col">#</th><th scope="col">Naam</th>{% if challenge.show_ride_count %}<th scope="col" class="num">Ritten</th>{% endif %}<th scope="col" class="num">{{ challenge.unit|default:"Score"|capfirst }}</th></tr></thead>
             <tbody>
               {% for score in scores %}
                 <tr>
                   <td{% if score.rank <= 3 %} class="podium"{% endif %}>{{ score.rank }}</td>
                   <td>{% if page.show_full_names %}{{ score.member_name }}{% else %}{{ score.short_name }}{% endif %}</td>
-                  <td class="num">{{ score.score|floatformat:"-1" }}</td>
                   {% if challenge.show_ride_count %}<td class="num">{{ score.ride_count|default_if_none:"" }}</td>{% endif %}
+                  <td class="num">{{ score.score|floatformat:"-1" }}</td>
                 </tr>
               {% endfor %}
             </tbody>

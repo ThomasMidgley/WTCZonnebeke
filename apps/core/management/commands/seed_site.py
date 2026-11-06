@@ -17,7 +17,7 @@ from wagtail.contrib.forms.utils import get_field_clean_name
 from wagtail.contrib.redirects.models import Redirect
 from wagtail.models import Page, Site
 
-from apps.core.models import Clubgegevens, CyqlApp, Integraties, QrInfo, Sponsor, Statuten, Toegang
+from apps.core.models import Clubgegevens, CyqlApp, Integraties, QrInfo, Sponsor, Toegang
 from apps.pages.models import (
     BoardMember,
     BoardPage,
@@ -385,12 +385,7 @@ class Command(BaseCommand):
             club.meeting_place = "Ingang basisschool De Wijzer, Zonnebeke"
             club.facebook_url = "https://www.facebook.com/zonnebeke/"
             club.strava_url = "https://www.strava.com/clubs/107957/"
-            club.privacy_url = "https://wtc-zonnebeke.be/vzw/privacyverklaring.pdf"
             club.save()
-        statuten = Statuten.load()
-        if not statuten.url:
-            statuten.url = "https://wtc-zonnebeke.be/vzw/statuten_2026.pdf"
-            statuten.save()
         CyqlApp.load().save()
         # Tenant-ID en e-mailadressen komen uit de omgeving: de repository is openbaar.
         Integraties.load().save()
