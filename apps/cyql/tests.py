@@ -229,6 +229,16 @@ class PageTests(TestCase):
         self.assertIn("Jan Peeters", self.client.get("/klassement/").content.decode())
 
 
+    def test_ride_challenge_has_no_duplicate_rides_column(self):
+        Challenge.objects.exclude(cyql_id=HIDDEN_ID).update(show_on_site=False)
+        Challenge.objects.update(score_type="NUMBER_OF_RIDES")
+        html = self.client.get("/klassement/").content.decode()
+        self.assertEqual(html.count(">Ritten</th>"), 1)
+        Challenge.objects.update(score_type="DISTANCE")
+        html = self.client.get("/klassement/").content.decode()
+        self.assertIn(">Km</th>", html)
+        self.assertIn(">Ritten</th>", html)
+
 class SchedulerTests(TestCase):
     def setUp(self):
         cyql = CyqlApp.load()

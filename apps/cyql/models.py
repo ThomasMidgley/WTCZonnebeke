@@ -108,6 +108,11 @@ class Challenge(models.Model):
     def unit(self):
         return self.SCORE_UNITS.get(self.score_type, "")
 
+    @property
+    def show_ride_count(self):
+        """Telt het klassement zelf ritten, dan is de score al het aantal ritten: geen dubbele kolom."""
+        return self.score_type != "NUMBER_OF_RIDES"
+
 
 class ChallengeScore(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name="scores")

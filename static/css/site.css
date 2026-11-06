@@ -279,7 +279,7 @@ figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; }
 .ranking th, .ranking td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid var(--line); }
 .ranking th { font-size: 0.9rem; color: var(--muted); }
 .ranking .num { text-align: right; font-variant-numeric: tabular-nums; }
-.ranking tbody tr:nth-child(-n+3) td:first-child { font-weight: 700; color: var(--accent-text); }
+.ranking td.podium { font-weight: 700; color: var(--accent-text); }
 .updated { color: var(--muted); font-size: 0.9rem; }
 
 /* Volg ons (hoofdpagina) */
