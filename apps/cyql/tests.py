@@ -234,10 +234,11 @@ class PageTests(TestCase):
         Challenge.objects.update(score_type="NUMBER_OF_RIDES")
         html = self.client.get("/klassement/").content.decode()
         self.assertEqual(html.count(">Ritten</th>"), 1)
-        Challenge.objects.update(score_type="DISTANCE")
+        Challenge.objects.update(score_type="SCORE")
         html = self.client.get("/klassement/").content.decode()
-        self.assertIn(">Km</th>", html)
-        self.assertIn(">Ritten</th>", html)
+        self.assertLess(html.index(">Ritten</th>"), html.index(">Score</th>"))
+        Challenge.objects.update(score_type="DISTANCE")
+        self.assertIn(">Km</th>", self.client.get("/klassement/").content.decode())
 
 class SchedulerTests(TestCase):
     def setUp(self):
